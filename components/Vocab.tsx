@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import SpeakButton from "@/components/SpeakButton";
 import { getVocab, setVocab } from "@/lib/vocab";
 import type { VocabEntry, VocabStatus } from "@/lib/vocab";
 
@@ -63,7 +64,9 @@ export default function Vocab() {
         <section className="scene">
           {current ? (
             <>
-              <h2 className="vocab-big">{current.en}</h2>
+              <h2 className="vocab-big">
+                {current.en} <SpeakButton text={current.en} />
+              </h2>
               {shown ? (
                 <>
                   <p className="vocab-tr">{current.ru}</p>
@@ -151,7 +154,7 @@ export default function Vocab() {
           {visible.map((w) => (
             <li key={w.en} className="vocab-row">
               <div>
-                <strong>{w.en}</strong>
+                <strong>{w.en}</strong> <SpeakButton text={w.en} />
                 <span className="dim"> — {w.ru}</span>
               </div>
               <div className="vocab-actions">

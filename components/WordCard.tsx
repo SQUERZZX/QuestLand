@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import SpeakButton from "@/components/SpeakButton";
 import { markWord, statusOf, wordOf } from "@/lib/vocab";
 import type { VocabStatus } from "@/lib/vocab";
 import type { Question } from "@/lib/quests";
@@ -27,7 +28,7 @@ export default function WordCard({
   return (
     <div className="word" role="group" aria-label="Слово для словаря">
       <p className="word-line">
-        <strong>{pair.en}</strong> — {pair.ru}
+        <strong>{pair.en}</strong> — {pair.ru} <SpeakButton text={pair.en} />
       </p>
       <div className="word-btns">
         <button

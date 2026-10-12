@@ -6,6 +6,7 @@ import Link from "next/link";
 import GameWorld from "@/components/GameWorld";
 import TerminalDock from "@/components/TerminalDock";
 import WordCard from "@/components/WordCard";
+import { sfx } from "@/lib/audio";
 import { CHAPTERS } from "@/lib/chapters";
 import type { Chapter } from "@/lib/chapters";
 import { LANDS } from "@/lib/lands";
@@ -95,6 +96,7 @@ export default function QuestWorld({ questId }: { questId: string }) {
   const pick = (i: number) => {
     if (picked !== null) return;
     setPicked(i);
+    sfx(i === q.answer ? "right" : "wrong");
     if (i === q.answer) setCorrect((c) => c + 1);
   };
 
