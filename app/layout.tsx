@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Alegreya, Alegreya_Sans } from "next/font/google";
 import "./globals.css";
+import "./assistant.css";
+import "./landscape.css";
 import ClickSound from "@/components/ClickSound";
+import Assistant from "@/components/Assistant";
 
 const display = Alegreya({
   subsets: ["latin", "cyrillic"],
@@ -31,6 +35,9 @@ export default function RootLayout({
       <body>
         <ClickSound />
         {children}
+        <Suspense fallback={null}>
+          <Assistant />
+        </Suspense>
       </body>
     </html>
   );

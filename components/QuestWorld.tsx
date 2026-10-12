@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 import Link from "next/link";
 import GameWorld from "@/components/GameWorld";
+import LandscapeGate from "@/components/LandscapeGate";
 import TerminalDock from "@/components/TerminalDock";
 import WordCard from "@/components/WordCard";
 import { sfx } from "@/lib/audio";
@@ -163,6 +164,7 @@ export default function QuestWorld({ questId }: { questId: string }) {
     return (
       <>
         <GameWorld chapter={chapter} onFinish={finish} />
+        <LandscapeGate />
         {land.id === "code" && <TerminalDock />}
       </>
     );

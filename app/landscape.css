@@ -1,0 +1,138 @@
+/* Подсказка «поверни телефон» */
+.lg-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 24px;
+  text-align: center;
+  background: rgba(11, 16, 32, 0.96);
+}
+
+.lg-overlay h2 {
+  font-size: 1.9rem;
+  color: var(--fire-hot);
+}
+
+.lg-overlay p {
+  max-width: 320px;
+  color: var(--dim);
+}
+
+.lg-note {
+  font-size: 0.9rem;
+}
+
+.lg-btns {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.lg-phone {
+  width: 54px;
+  height: 94px;
+  border: 4px solid var(--fire-hot);
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  animation: lg-turn 2.4s ease-in-out infinite;
+}
+
+.lg-phone span {
+  width: 22px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--fire-hot);
+}
+
+@keyframes lg-turn {
+  0%,
+  25% {
+    transform: rotate(0deg);
+  }
+  60%,
+  100% {
+    transform: rotate(-90deg);
+  }
+}
+
+/* Телефон лёжа: экран низкий, поэтому всё компактнее */
+@media (orientation: landscape) and (max-height: 500px) {
+  .world-hud {
+    top: 6px;
+    left: 8px;
+    right: 8px;
+    gap: 4px;
+  }
+
+  .hud-chip {
+    padding: 3px 10px;
+    font-size: 0.8rem;
+  }
+
+  .touch {
+    padding: 8px 16px;
+  }
+
+  .touch-btn {
+    width: 60px;
+    height: 60px;
+    font-size: 1.5rem;
+  }
+
+  .talk-wrap {
+    padding: 6px;
+  }
+
+  .talk {
+    max-height: 58vh;
+    padding: 10px 14px;
+    font-size: 1rem;
+    flex-direction: row;
+  }
+
+  .talk-portrait {
+    width: 44px;
+    height: 44px;
+  }
+
+  .chapter-card {
+    top: 14%;
+    padding: 8px 22px;
+  }
+
+  .as-root.as-top {
+    top: 40px;
+    right: 8px;
+  }
+
+  .as-top .as-fab {
+    width: 46px;
+    height: 46px;
+  }
+
+  .as-top .as-fab svg {
+    width: 38px;
+    height: 38px;
+  }
+
+  .as-panel {
+    max-height: calc(100vh - 100px);
+  }
+
+  .as-welcome {
+    padding: 14px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lg-phone {
+    animation: none;
+  }
+}
