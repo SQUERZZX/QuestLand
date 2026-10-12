@@ -1,3 +1,4 @@
+import HeroScene from "@/components/HeroScene";
 import WorldMap from "@/components/WorldMap";
 import { RANKS } from "@/lib/lands";
 import Link from "next/link";
@@ -12,21 +13,40 @@ export default function Home() {
         </button>
       </header>
 
-      <section className="hero">
-        <h1>Учись как в приключении. Пропустил день — потерял жизнь.</h1>
-        <p className="lead">
-          Английский, программирование, математика или привычки. Выбери землю,
-          проходи квесты каждый день и открывай карту дальше.
-        </p>
-       <Link href="/dashboard" className="btn">
-  Начать путь
-</Link>
+      <section className="hero-wrap">
+        <div className="hero">
+          <span className="hero-tag">🎮 Учёба как игра</span>
+          <h1>
+            Учись как в <span className="grad">приключении</span>. Пропустил день — потерял{" "}
+            <span className="hero-heart">♥</span>
+          </h1>
+          <p className="lead">
+            Английский, программирование, математика или привычки. Выбери землю,
+            проходи квесты каждый день и открывай карту дальше.
+          </p>
+          <div className="hero-cta">
+            <Link href="/dashboard" className="btn btn-big">
+              ▶ Начать путь
+            </Link>
+            <a href="#how" className="btn btn-ghost">
+              Как это работает
+            </a>
+          </div>
+          <ul className="chips">
+            <li>🔥 Серия дней</li>
+            <li>💎 Кристаллы речи</li>
+            <li>🗣 Слова с озвучкой</li>
+            <li>⌨ Код в терминале</li>
+          </ul>
+        </div>
+        <HeroScene />
       </section>
 
       <WorldMap />
 
-      <section className="rules">
+      <section className="rules" id="how">
         <article className="rule rule-life">
+          <span className="rule-ico">❤️</span>
           <h3>Жизни</h3>
           <p>
             У героя три жизни:{" "}
@@ -39,6 +59,7 @@ export default function Home() {
         </article>
 
         <article className="rule rule-xp">
+          <span className="rule-ico">⭐</span>
           <h3>Опыт</h3>
           <p>
             Каждый квест даёт XP. Серия дней подряд увеличивает награду, а
@@ -47,6 +68,7 @@ export default function Home() {
         </article>
 
         <article className="rule rule-rank">
+          <span className="rule-ico">🏆</span>
           <h3>Ранги</h3>
           <ul className="ranks">
             {RANKS.map((r) => (
@@ -59,7 +81,7 @@ export default function Home() {
         </article>
       </section>
 
-      <footer className="foot dim">QuestLands</footer>
+      <footer className="foot dim">QuestLands · учись, играя ✨</footer>
     </main>
   );
 }
