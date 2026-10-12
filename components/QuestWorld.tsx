@@ -5,6 +5,7 @@ import type { CSSProperties } from "react";
 import Link from "next/link";
 import GameWorld from "@/components/GameWorld";
 import TerminalDock from "@/components/TerminalDock";
+import WordCard from "@/components/WordCard";
 import { CHAPTERS } from "@/lib/chapters";
 import type { Chapter } from "@/lib/chapters";
 import { LANDS } from "@/lib/lands";
@@ -213,6 +214,9 @@ export default function QuestWorld({ questId }: { questId: string }) {
               <strong>{picked === q.answer ? "Верно." : "Не совсем."}</strong>{" "}
               {q.explain}
             </p>
+            {land.id === "english" && (
+              <WordCard key={step} question={q} chapterId={questId} />
+            )}
             <button type="button" className="btn" onClick={nextStep}>
               {step + 1 < questions.length ? "Дальше" : "Завершить квест"}
             </button>

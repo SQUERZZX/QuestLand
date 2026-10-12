@@ -102,6 +102,7 @@ export default function Dashboard() {
   const lands = LANDS.filter((l) => focus.includes(l.id));
   const allDone = lands.length > 0 && lands.every((l) => done.includes(l.id));
   const hasCode = focus.includes("code");
+  const hasEnglish = focus.includes("english");
   const focusNames = LANDS.filter((l) => focus.includes(l.id))
     .map((l) => l.name)
     .join(", ");
@@ -207,6 +208,11 @@ export default function Dashboard() {
           QuestLands
         </Link>
         <span className="top-side">
+          {hasEnglish && (
+            <Link href="/vocab" className="btn btn-ghost top-term">
+              📖 Словарь{save.vocab.length > 0 ? ` (${save.vocab.length})` : ""}
+            </Link>
+          )}
           {hasCode && (
             <Link href="/terminal" className="btn btn-ghost top-term">
               ⌨ Терминал

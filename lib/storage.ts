@@ -1,6 +1,7 @@
 import { START_HERO } from "@/lib/hero";
 import type { Hero } from "@/lib/hero";
 import type { LevelId } from "@/lib/levels";
+import type { VocabEntry } from "@/lib/vocab";
 
 export type SaveData = {
   hero: Hero;
@@ -9,6 +10,7 @@ export type SaveData = {
   level: LevelId; // выбранный уровень английского
   codeLevel: LevelId; // выбранный уровень программирования
   passed: string[]; // id пройденных глав (навсегда)
+  vocab: VocabEntry[]; // личный словарь английских слов
 };
 
 const KEY = "questlands-save";
@@ -20,6 +22,7 @@ export const EMPTY_SAVE: SaveData = {
   level: "a0",
   codeLevel: "a0",
   passed: [],
+  vocab: [],
 };
 
 export function loadSave(): SaveData {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import WordCard from "@/components/WordCard";
 import Link from "next/link";
 import CodeChallenge from "@/components/CodeChallenge";
 import type { Chapter, Theme } from "@/lib/chapters";
@@ -2261,10 +2262,12 @@ export default function GameWorld({ chapter, onFinish }: Props) {
       {dialogue?.kind === "npc" && npcNow && !npcNow.task && question && dialogue.stage === "question" && (
         <div className="talk-wrap">
           <Ask
+            key={dialogue.npc}
             speaker={npcNow.name}
             color={npcNow.color}
             question={question}
             picked={dialogue.picked}
+            vocabChapter={chapter.land === "english" ? chapter.id : null}
             onPick={pick}
             onNext={afterAnswer}
           />
@@ -2383,6 +2386,7 @@ function Ask({
   color,
   question,
   picked,
+  vocabChapter,
   onPick,
   onNext,
 }: {
@@ -2390,6 +2394,7 @@ function Ask({
   color: string;
   question: Question;
   picked: number | null;
+  vocabChapter: string | null;
   onPick: (i: number) => void;
   onNext: () => void;
 }) {
@@ -2441,6 +2446,9 @@ function Ask({
               <strong>{picked === question.answer ? "Верно." : "Не совсем."}</strong>{" "}
               {question.explain}
             </p>
+            {vocabChapter && (
+              <WordCard question={question} chapterId={vocabChapter} />
+            )}
             <button type="button" className="btn" onClick={onNext} autoFocus>
               Дальше
             </button>
