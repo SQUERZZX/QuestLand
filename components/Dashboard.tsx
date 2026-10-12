@@ -26,7 +26,14 @@ export default function Dashboard() {
   const [lostCount, setLostCount] = useState(0);
 
   useEffect(() => {
-    setSave(loadSave());
+    const loaded = loadSave();
+    if (loaded.focus.length > 1) {
+      const single = { ...loaded, focus: [loaded.focus[0]] };
+      writeSave(single);
+      setSave(single);
+    } else {
+      setSave(loaded);
+    }
     setReady(true);
   }, []);
 
@@ -52,8 +59,9 @@ export default function Dashboard() {
     writeSave(data);
   };
 
+  // Направление одно: выбранная земля заменяет прежнюю
   const toggle = (id: string) => {
-    setChosen((c) => (c.includes(id) ? c.filter((x) => x !== id) : [...c, id]));
+    setChosen([id]);
   };
 
   const startPath = () => {
@@ -86,8 +94,9 @@ export default function Dashboard() {
         <section className="pick">
           <h1>Выбери направление</h1>
           <p className="dim">
-            Квесты на каждый день будут только из выбранных земель. Направление
-            можно сменить позже.
+            На экране останется только выбранная земля: её квесты, уровни и
+            прогресс. Направление можно сменить в любой момент, прогресс
+            сохранится.
           </p>
 
           <div className="lands">
@@ -203,7 +212,6 @@ export default function Dashboard() {
       </section>
 
       <section>
-        <h2 className="section-title">Квесты</h2>
         <p className="dim focus-line">
           Направление: {focusNames}.{" "}
           <button type="button" className="link-btn" onClick={changeFocus}>
