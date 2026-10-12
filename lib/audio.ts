@@ -1,4 +1,4 @@
-// Звук без файлов: эффекты через Web Audio и произношение английских слов через речевой синтез браузера.
+// Звуковые эффекты без файлов: всё генерируется через Web Audio.
 
 const KEY = "questlands-audio";
 
@@ -115,20 +115,9 @@ export function sfx(name: Sfx) {
 
 /* ---------- Произношение слов ---------- */
 
-function synth(): SpeechSynthesis | null {
-  if (typeof window === "undefined" || !("speechSynthesis" in window)) return null;
-  return window.speechSynthesis;
-}
-
-// Всегда по нажатию кнопки 🔊: американский английский, чуть медленнее обычного
+// Кнопки 🔊 в карточке слова и в словаре остались, но голос отключён.
+// Чтобы вернуть звук позже (например, проигрывать записанные файлы),
+// достаточно дописать воспроизведение здесь: кнопки вызывают только эту функцию.
 export function speakWord(word: string) {
-  const s = synth();
-  if (!s) return;
-  s.cancel();
-  const u = new SpeechSynthesisUtterance(word);
-  u.lang = "en-US";
-  const voices = s.getVoices().filter((v) => v.lang.toLowerCase().replace("_", "-") === "en-us");
-  if (voices.length > 0) u.voice = voices[0];
-  u.rate = 0.85;
-  s.speak(u);
+  void word;
 }

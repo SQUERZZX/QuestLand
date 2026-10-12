@@ -1,9 +1,12 @@
 import HeroScene from "@/components/HeroScene";
 import WorldMap from "@/components/WorldMap";
-import { RANKS } from "@/lib/lands";
+import { CHAPTERS } from "@/lib/chapters";
+import { LANDS, RANKS } from "@/lib/lands";
 import Link from "next/link";
 
 export default function Home() {
+  const chapters = Object.keys(CHAPTERS).length;
+
   return (
     <main className="wrap">
       <header className="top">
@@ -15,10 +18,9 @@ export default function Home() {
 
       <section className="hero-wrap">
         <div className="hero">
-          <span className="hero-tag">🎮 Учёба как игра</span>
+          <span className="hero-tag">Ежедневное обучение</span>
           <h1>
-            Учись как в <span className="grad">приключении</span>. Пропустил день — потерял{" "}
-            <span className="hero-heart">♥</span>
+            Учись как в <em>приключении</em>. Пропустил день — потерял жизнь.
           </h1>
           <p className="lead">
             Английский, программирование, математика или привычки. Выбери землю,
@@ -26,18 +28,26 @@ export default function Home() {
           </p>
           <div className="hero-cta">
             <Link href="/dashboard" className="btn btn-big">
-              ▶ Начать путь
+              Начать путь →
             </Link>
-            <a href="#how" className="btn btn-ghost">
+            <a href="#how" className="btn btn-ghost btn-big-ghost">
               Как это работает
             </a>
           </div>
-          <ul className="chips">
-            <li>🔥 Серия дней</li>
-            <li>💎 Кристаллы речи</li>
-            <li>🗣 Слова с озвучкой</li>
-            <li>⌨ Код в терминале</li>
-          </ul>
+          <dl className="hero-stats">
+            <div>
+              <dt>Глав</dt>
+              <dd>{chapters}</dd>
+            </div>
+            <div>
+              <dt>Уровни</dt>
+              <dd>A0–B1</dd>
+            </div>
+            <div>
+              <dt>Земель</dt>
+              <dd>{LANDS.length}</dd>
+            </div>
+          </dl>
         </div>
         <HeroScene />
       </section>
@@ -46,7 +56,7 @@ export default function Home() {
 
       <section className="rules" id="how">
         <article className="rule rule-life">
-          <span className="rule-ico">❤️</span>
+          <span className="rule-num">01</span>
           <h3>Жизни</h3>
           <p>
             У героя три жизни:{" "}
@@ -59,7 +69,7 @@ export default function Home() {
         </article>
 
         <article className="rule rule-xp">
-          <span className="rule-ico">⭐</span>
+          <span className="rule-num">02</span>
           <h3>Опыт</h3>
           <p>
             Каждый квест даёт XP. Серия дней подряд увеличивает награду, а
@@ -68,7 +78,7 @@ export default function Home() {
         </article>
 
         <article className="rule rule-rank">
-          <span className="rule-ico">🏆</span>
+          <span className="rule-num">03</span>
           <h3>Ранги</h3>
           <ul className="ranks">
             {RANKS.map((r) => (
@@ -81,7 +91,7 @@ export default function Home() {
         </article>
       </section>
 
-      <footer className="foot dim">QuestLands · учись, играя ✨</footer>
+      <footer className="foot dim">QuestLands</footer>
     </main>
   );
 }
