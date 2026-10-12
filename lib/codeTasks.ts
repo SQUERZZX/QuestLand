@@ -110,6 +110,22 @@ export const CODE_TASKS: Record<string, (CodeTask | undefined)[]> = {
       hint: '// это заметка\nconsole.log("OK")',
       success: "Терминал зажёгся! Спасибо, Странник.",
     },
+    {
+      prompt: "Склей слова «до» и «мой» и выведи получившееся слово.",
+      starter: "",
+      expected: ["домой"],
+      mustMatch: "\\+",
+      mustMatchMsg: "Склеивай строки плюсом.",
+      hint: 'console.log("до" + "мой")',
+      success: "Слова склеились! Спасибо!",
+    },
+    {
+      prompt: "Выведи число 42. Кавычки не нужны.",
+      starter: "",
+      expected: ["42"],
+      hint: "console.log(42)",
+      success: "Теперь я знаю, как печатать числа. Спасибо!",
+    },
   ],
   "code-a0-2": [
     {
@@ -165,6 +181,15 @@ export const CODE_TASKS: Record<string, (CodeTask | undefined)[]> = {
       mustMatchMsg: "Округлять вниз умеет Math.floor().",
       hint: "console.log(Math.floor(4.9))",
       success: "Счёты щёлкают! Спасибо, Странник.",
+    },
+    {
+      prompt: "Выведи результат выражения 10 минус 4 умножить на 2.",
+      starter: "",
+      expected: ["2"],
+      mustMatch: "\\*",
+      mustMatchMsg: "Запиши выражение с умножением: 10 - 4 * 2.",
+      hint: "console.log(10 - 4 * 2)",
+      success: "Булки посчитаны. Спасибо!",
     },
   ],
 };

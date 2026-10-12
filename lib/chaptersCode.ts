@@ -1,4 +1,4 @@
-import { LAYOUT_A, LAYOUT_B, make } from "@/lib/chapterKit";
+import { make } from "@/lib/chapterKit";
 import type { Chapter, Meta, NpcDef } from "@/lib/chapterKit";
 import { CODE_TASKS } from "@/lib/codeTasks";
 
@@ -29,7 +29,6 @@ let counter = 0;
 
 function chapter(meta: Meta, rows: Row[]): Chapter {
   const k = counter++;
-  const layout = meta.order % 2 === 1 ? LAYOUT_A : LAYOUT_B;
   const defs: NpcDef[] = rows.map((row, i) => {
     const [name, color, l1, l2, after, prompt, right, w1, w2, w3, explain] = row;
     const options = [w1, w2, w3];
@@ -44,7 +43,7 @@ function chapter(meta: Meta, rows: Row[]): Chapter {
       task: CODE_TASKS[meta.id]?.[i],
     };
   });
-  return make(meta, layout, defs, "code");
+  return make(meta, defs, "code");
 }
 
 export const CODE_CHAPTERS: Chapter[] = [
@@ -86,6 +85,12 @@ export const CODE_CHAPTERS: Chapter[] = [
       ["Старый хакер Гэс", XP, "Я хочу оставить в коде заметку, которую компьютер пропустит.", "Помоги, и терминал заработает.", "Терминал зажёгся! Спасибо, Странник.",
         "Как в JavaScript написать однострочный комментарий?", "// это комментарий", "# это комментарий", "-- это комментарий", "** это комментарий",
         "Комментарий начинается с //. Всё, что стоит справа, JavaScript пропускает."],
+      ["Мальчик Дим", SKY, "Я хочу склеить два слова в одно, но забыл, как это делается.", "Поможешь?", "Слова склеились! Спасибо!",
+        'Что выведет console.log("a" + "b")?', "ab", "a b", "a+b", "Ошибку",
+        "Плюс между строками склеивает их без пробела: ab."],
+      ["Бабушка Лина", PINK, "Внучка говорит, что числа в консоли надо брать в кавычки.", "Это правда?", "Теперь я знаю, как печатать числа. Спасибо!",
+        "Нужны ли кавычки вокруг числа в console.log(42)?", "Нет, числа пишут без кавычек", "Да, всегда", "Только двойные", "Только одинарные",
+        "Кавычки нужны только тексту. Число 42 пишут как есть."],
     ],
   ),
 
@@ -125,6 +130,9 @@ export const CODE_CHAPTERS: Chapter[] = [
       ["Мастер Арсен", XP, "Мне нужно целое число из дробного.", "Помоги, и счёты защёлкают.", "Счёты щёлкают! Спасибо, Странник.",
         "Что выведет console.log(Math.floor(4.9))?", "4", "5", "4.9", "0",
         "Math.floor округляет вниз до целого: 4."],
+      ["Пекарь Фил", FIRE, "Я посчитал булки, но порядок действий меня запутал.", "Что получится?", "Булки посчитаны. Спасибо!",
+        "Что выведет console.log(10 - 4 * 2)?", "2", "12", "6", "8",
+        "Сначала умножение: 4 * 2 = 8, потом 10 - 8 = 2."],
     ],
   ),
 
