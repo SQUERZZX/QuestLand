@@ -16,6 +16,7 @@ import {
 } from "@/lib/progressionManager";
 import { EMPTY_SAVE, loadSave, writeSave } from "@/lib/storage";
 import type { SaveData } from "@/lib/storage";
+import styles from "@/components/LandSection.module.css";
 
 export default function Dashboard() {
   const [save, setSave] = useState<SaveData>(EMPTY_SAVE);
@@ -212,7 +213,7 @@ export default function Dashboard() {
       </section>
 
       <section>
-        <p className="dim focus-line">
+        <p className={`dim ${styles.focus}`}>
           Направление: {focusNames}.{" "}
           <button type="button" className="link-btn" onClick={changeFocus}>
             Сменить
@@ -235,22 +236,22 @@ export default function Dashboard() {
         return (
           <section
             key={land.id}
-            className="land-block"
+            className={styles.block}
             style={{ "--land": land.color } as CSSProperties}
           >
-            <div className="land-head">
+            <div className={styles.head}>
               <div>
-                <h2 className="land-title">{land.name}</h2>
-                <p className="dim">{land.tagline}</p>
+                <h2 className={styles.title}>{land.name}</h2>
+                <p className={`dim ${styles.tagline}`}>{land.tagline}</p>
               </div>
               {land.id === "code" && (
-                <Link href="/terminal" className="btn btn-ghost land-term">
+                <Link href="/terminal" className={`btn btn-ghost ${styles.term}`}>
                   ⌨ Терминал
                 </Link>
               )}
             </div>
 
-            <h3 className="land-sub">Квесты</h3>
+            <h3 className={styles.sub}>Квесты</h3>
             <ul className="today">
               {landQuests.map((q) => {
                 const isDone = q.state === "done";
@@ -289,8 +290,8 @@ export default function Dashboard() {
 
             {withPath && (
               <>
-                <h3 className="land-sub">{LEVEL_SETS[land.id].pathTitle}</h3>
-                <p className="dim focus-line">
+                <h3 className={styles.sub}>{LEVEL_SETS[land.id].pathTitle}</h3>
+                <p className={`dim ${styles.hint}`}>
                   Выбери свой уровень. Когда пройдёшь все главы уровня,
                   следующий откроется сам.
                 </p>
