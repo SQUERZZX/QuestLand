@@ -3,15 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import WordCard from "@/components/WordCard";
 import AudioToggle from "@/components/AudioToggle";
-import {
-  NARRATOR_VOICE,
-  sfx,
-  speak,
-  stopSpeech,
-  voiceActive,
-  voiceProfile,
-} from "@/lib/audio";
-import type { VoiceProfile } from "@/lib/audio";
+import { sfx } from "@/lib/audio";
 import Link from "next/link";
 import CodeChallenge from "@/components/CodeChallenge";
 import type { Chapter, Theme } from "@/lib/chapters";
@@ -345,6 +337,11 @@ export default function GameWorld({ chapter, onFinish }: Props) {
 
   const correctCount = results.filter((r) => r === true).length;
   const answeredCount = results.filter((r) => r !== null).length;
+
+  // Звук старта главы
+  useEffect(() => {
+    sfx("start");
+  }, []);
 
   useEffect(() => {
     frozenRef.current = dialogue !== null;
@@ -2254,7 +2251,6 @@ export default function GameWorld({ chapter, onFinish }: Props) {
           <Say
             speaker={npcNow.name}
             color={npcNow.color}
-            voice={voiceProfile(npcNow.name, npcNow.look)}
             text={dialogue.lines[dialogue.line]}
             nextLabel={
               dialogue.line + 1 < dialogue.lines.length || dialogue.asks
@@ -2285,7 +2281,6 @@ export default function GameWorld({ chapter, onFinish }: Props) {
             key={dialogue.npc}
             speaker={npcNow.name}
             color={npcNow.color}
-            voice={voiceProfile(npcNow.name, npcNow.look)}
             question={question}
             picked={dialogue.picked}
             vocabChapter={chapter.land === "english" ? chapter.id : null}
@@ -2318,17 +2313,17 @@ export default function GameWorld({ chapter, onFinish }: Props) {
 
 /* ---------- Диалоговые окна ---------- */
 
-function useTypewriter(text: string, onChar?: () => void) {
+function useTypewriter(text: string) {
   const [state, setState] = useState({ text, count: 0 });
   const count = state.text === text ? state.count : 0;
 
   useEffect(() => {
     if (count >= text.length) return;
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const id = setTimeout(() => {
-      if (!reduced && count % 2 === 0 && /\S/.test(text[count])) onChar?.();
-      setState({ text, count: reduced ? text.length : count + 1 });
-    }, reduced ? 0 : 22);
+    const id = setTimeout(
+      () => setState({ text, count: reduced ? text.length : count + 1 }),
+      reduced ? 0 : 22,
+    );
     return () => clearTimeout(id);
   }, [text, count]);
 
@@ -2355,30 +2350,18 @@ function Portrait({ color }: { color: string }) {
 function Say({
   speaker,
   color,
-  voice = NARRATOR_VOICE,
   text,
   nextLabel,
   onNext,
 }: {
   speaker?: string;
   color?: string;
-  voice?: VoiceProfile;
   text: string;
   nextLabel: string;
   onNext: () => void;
 }) {
-  // Если голос не звучит, текст «болтает» короткими звуками
-  const { shown, done, skip } = useTypewriter(text, () => {
-    if (!voiceActive()) sfx("blip", voice.blip);
-  });
+  const { shown, done, skip } = useTypewriter(text);
   const advance = () => (done ? onNext() : skip());
-
-  // Голос читает реплику, пока она на экране
-  useEffect(() => {
-    speak(text, voice);
-    return () => stopSpeech();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [text]);
 
   // Пробел или Enter тоже листают реплику
   useEffect(() => {
@@ -2406,20 +2389,9 @@ function Say({
           <span aria-hidden="true">{shown}</span>
           <span className="sr-only">{text}</span>
         </p>
-        <div className="talk-actions">
-          <button type="button" className="btn" onClick={advance} autoFocus>
-            {done ? nextLabel : "Пропустить"}
-          </button>
-          <button
-            type="button"
-            className="btn btn-ghost speak-btn"
-            aria-label="Повторить голосом"
-            title="Повторить голосом"
-            onClick={() => speak(text, voice, true)}
-          >
-            🔊
-          </button>
-        </div>
+        <button type="button" className="btn" onClick={advance} autoFocus>
+          {done ? nextLabel : "Пропустить"}
+        </button>
       </div>
     </div>
   );
@@ -2428,7 +2400,6 @@ function Say({
 function Ask({
   speaker,
   color,
-  voice,
   question,
   picked,
   vocabChapter,
@@ -2437,25 +2408,12 @@ function Ask({
 }: {
   speaker: string;
   color: string;
-  voice: VoiceProfile;
   question: Question;
   picked: number | null;
   vocabChapter: string | null;
   onPick: (i: number) => void;
   onNext: () => void;
 }) {
-  // Житель читает вопрос, а после ответа пояснение
-  useEffect(() => {
-    speak(
-      picked === null
-        ? question.prompt
-        : `${picked === question.answer ? "Верно." : "Не совсем."} ${question.explain}`,
-      voice,
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [picked]);
-  useEffect(() => () => stopSpeech(), []);
-
   // Цифры 1–4 выбирают ответ
   useEffect(() => {
     if (picked !== null) return;
@@ -2474,18 +2432,7 @@ function Ask({
         <div className="talk-name" style={{ color }}>
           {speaker}
         </div>
-        <p className="talk-text">
-          {question.prompt}{" "}
-          <button
-            type="button"
-            className="btn btn-ghost speak-btn"
-            aria-label="Повторить вопрос голосом"
-            title="Повторить вопрос голосом"
-            onClick={() => speak(question.prompt, voice, true)}
-          >
-            🔊
-          </button>
-        </p>
+        <p className="talk-text">{question.prompt}</p>
 
         <div className="options">
           {question.options.map((option, i) => {

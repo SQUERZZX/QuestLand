@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import SpeakButton from "@/components/SpeakButton";
+import { sfx } from "@/lib/audio";
 import { markWord, statusOf, wordOf } from "@/lib/vocab";
 import type { VocabStatus } from "@/lib/vocab";
 import type { Question } from "@/lib/quests";
@@ -22,6 +23,7 @@ export default function WordCard({
 
   const choose = (s: VocabStatus) => {
     markWord(pair, s, chapterId);
+    sfx(s === "known" ? "right" : "gem");
     setStatus(s);
   };
 

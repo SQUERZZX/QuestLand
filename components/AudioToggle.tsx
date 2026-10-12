@@ -2,36 +2,20 @@
 
 import { useEffect, useState } from "react";
 import { getAudio, setAudio } from "@/lib/audio";
-import type { AudioSettings } from "@/lib/audio";
 
-// Две кнопки в шапке мира: звуки и голоса
+// Кнопка в шапке мира: звуки вкл/выкл
 export default function AudioToggle() {
-  const [s, setS] = useState<AudioSettings>({ sfx: true, voice: true });
+  const [on, setOn] = useState(true);
 
   useEffect(() => {
-    setS(getAudio());
+    setOn(getAudio().sfx);
   }, []);
 
-  const flip = (key: keyof AudioSettings) => setS(setAudio({ [key]: !s[key] }));
+  const flip = () => setOn(setAudio({ sfx: !on }).sfx);
 
   return (
-    <>
-      <button
-        type="button"
-        className="hud-chip hud-btn"
-        aria-pressed={s.sfx}
-        onClick={() => flip("sfx")}
-      >
-        {s.sfx ? "🔊" : "🔇"} Звуки
-      </button>
-      <button
-        type="button"
-        className="hud-chip hud-btn"
-        aria-pressed={s.voice}
-        onClick={() => flip("voice")}
-      >
-        {s.voice ? "🗣" : "🤐"} Голоса
-      </button>
-    </>
+    <button type="button" className="hud-chip hud-btn" aria-pressed={on} onClick={flip}>
+      {on ? "🔊" : "🔇"} Звуки
+    </button>
   );
 }

@@ -67,6 +67,7 @@ export default function QuestWorld({ questId }: { questId: string }) {
 
   useEffect(() => {
     if (phase !== "loading") return;
+    sfx("load");
     const timer = setTimeout(() => setPhase("play"), LOADING_MS);
     return () => clearTimeout(timer);
   }, [phase]);
@@ -253,6 +254,11 @@ function ResultScreen({
   onRetry: () => void;
 }) {
   const xpShown = useCountUp(passed && awarded ? reward : 0);
+
+  // Звук результата: победа или поражение
+  useEffect(() => {
+    sfx(passed ? "win" : "lose");
+  }, [passed]);
   const level = finished ? levelsOf(landId).find((l) => l.id === finished) : undefined;
   const nextLevel = finished ? nextLevelOf(finished, landId) : null;
 

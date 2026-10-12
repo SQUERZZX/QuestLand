@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Alegreya, Alegreya_Sans } from "next/font/google";
 import "./globals.css";
+import ClickSound from "@/components/ClickSound";
 
 const display = Alegreya({
   subsets: ["latin", "cyrillic"],
@@ -27,7 +28,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ru" className={`${display.variable} ${body.variable}`}>
-      <body>{children}</body>
+      <body>
+        <ClickSound />
+        {children}
+      </body>
     </html>
   );
 }
