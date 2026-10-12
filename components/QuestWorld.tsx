@@ -4,10 +4,11 @@ import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 import Link from "next/link";
 import GameWorld from "@/components/GameWorld";
+import TerminalDock from "@/components/TerminalDock";
 import { CHAPTERS } from "@/lib/chapters";
 import type { Chapter } from "@/lib/chapters";
 import { LANDS } from "@/lib/lands";
-import { LEVELS } from "@/lib/levels";
+import { levelsOf } from "@/lib/levels";
 import type { LevelId } from "@/lib/levels";
 import { applyCompletion, nextLevelOf } from "@/lib/progressionManager";
 import { QUEST_CONTENT } from "@/lib/quests";
@@ -147,6 +148,7 @@ export default function QuestWorld({ questId }: { questId: string }) {
         reward={reward}
         awarded={awarded}
         finished={finished}
+        landId={land.id}
         onRetry={retry}
       />
     );
@@ -154,7 +156,12 @@ export default function QuestWorld({ questId }: { questId: string }) {
 
   // Игровой мир на весь экран, если для земли есть глава
   if (chapter) {
-    return <GameWorld chapter={chapter} onFinish={finish} />;
+    return (
+      <>
+        <GameWorld chapter={chapter} onFinish={finish} />
+        {land.id === "code" && <TerminalDock />}
+      </>
+    );
   }
 
   // Обычный опрос для земель без главы
@@ -225,6 +232,7 @@ function ResultScreen({
   reward,
   awarded,
   finished,
+  landId,
   onRetry,
 }: {
   style: CSSProperties;
@@ -235,11 +243,12 @@ function ResultScreen({
   reward: number;
   awarded: boolean;
   finished: LevelId | null;
+  landId: string;
   onRetry: () => void;
 }) {
   const xpShown = useCountUp(passed && awarded ? reward : 0);
-  const level = finished ? LEVELS.find((l) => l.id === finished) : undefined;
-  const nextLevel = finished ? nextLevelOf(finished) : null;
+  const level = finished ? levelsOf(landId).find((l) => l.id === finished) : undefined;
+  const nextLevel = finished ? nextLevelOf(finished, landId) : null;
 
   return (
     <main className="wrap" style={style}>
@@ -261,13 +270,13 @@ function ResultScreen({
             {awarded ? (
               <p className="xp">+{xpShown} XP</p>
             ) : (
-              <p className="dim">Награда за этот квест сегодня уже получена.</p>
+              <p className="dim">Награда за этот квест уже получена.</p>
             )}
             {level && (
               <p className="dim">
                 {nextLevel
-                  ? `Следующий уровень: ${nextLevel.code} «${nextLevel.title}». Он откроется в завтрашнем квесте.`
-                  : "Это высший уровень. Ты прошёл весь путь английского."}
+                  ? `Следующий уровень: ${nextLevel.code} «${nextLevel.title}». Он уже открыт на главной.`
+                  : "Это высший уровень. Ты прошёл весь путь до конца."}
               </p>
             )}
           </>

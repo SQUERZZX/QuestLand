@@ -7,6 +7,7 @@ export type SaveData = {
   done: string[]; // id земель, где сегодня квест пройден
   focus: string[]; // выбранные земли
   level: LevelId; // выбранный уровень английского
+  codeLevel: LevelId; // выбранный уровень программирования
   passed: string[]; // id пройденных глав (навсегда)
 };
 
@@ -17,6 +18,7 @@ export const EMPTY_SAVE: SaveData = {
   done: [],
   focus: [],
   level: "a0",
+  codeLevel: "a0",
   passed: [],
 };
 

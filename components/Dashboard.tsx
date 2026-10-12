@@ -5,11 +5,13 @@ import type { CSSProperties } from "react";
 import Link from "next/link";
 import { MAX_LIVES, getRank } from "@/lib/hero";
 import { LANDS } from "@/lib/lands";
-import { LEVELS } from "@/lib/levels";
+import { LEVEL_SETS, levelsOf } from "@/lib/levels";
 import {
   getDailyQuests,
+  getLevel,
   hasChapters,
   levelProgress,
+  setLevel,
   skipDay,
 } from "@/lib/progressionManager";
 import { EMPTY_SAVE, loadSave, writeSave } from "@/lib/storage";
@@ -38,8 +40,10 @@ export default function Dashboard() {
 
   const showPicker = focus.length === 0 || editing;
   const quests = getDailyQuests(save);
-  const allDone = quests.length > 0 && quests.every((q) => done.includes(q.landId));
-  const hasEnglish = focus.includes("english");
+  const lands = LANDS.filter((l) => focus.includes(l.id));
+  const allDone = lands.length > 0 && lands.every((l) => done.includes(l.id));
+  const pathLands = lands.filter((l) => hasChapters(l.id) && levelsOf(l.id).length > 0);
+  const hasCode = focus.includes("code");
   const focusNames = LANDS.filter((l) => focus.includes(l.id))
     .map((l) => l.name)
     .join(", ");
@@ -103,7 +107,7 @@ export default function Dashboard() {
                   <span className="dim">{land.tagline}</span>
                   <span className="land-tag">
                     {hasChapters(land.id)
-                      ? "Сюжетные главы, уровни A0–B1"
+                      ? `Сюжетные главы, уровни ${levelsOf(land.id)[0].code}–${levelsOf(land.id).slice(-1)[0].code}`
                       : "Пока обычный опрос"}
                   </span>
                 </button>
@@ -141,7 +145,14 @@ export default function Dashboard() {
         <Link href="/" className="logo">
           QuestLands
         </Link>
-        <span className="dim">{current.name}</span>
+        <span className="top-side">
+          {hasCode && (
+            <Link href="/terminal" className="btn btn-ghost top-term">
+              ⌨ Терминал
+            </Link>
+          )}
+          <span className="dim">{current.name}</span>
+        </span>
       </header>
 
       {fallen && (
@@ -193,7 +204,7 @@ export default function Dashboard() {
       </section>
 
       <section>
-        <h2 className="section-title">Квесты на сегодня</h2>
+        <h2 className="section-title">Квесты</h2>
         <p className="dim focus-line">
           Направление: {focusNames}.{" "}
           <button type="button" className="link-btn" onClick={changeFocus}>
@@ -203,16 +214,17 @@ export default function Dashboard() {
 
         {allDone && (
           <p className="alert alert-ok" role="status">
-            Все квесты на сегодня пройдены. Возвращайся завтра, чтобы не потерять жизнь.
+            Дневная цель выполнена, серия засчитана. Можешь пройти ещё главы или вернуться завтра, чтобы не потерять жизнь.
           </p>
         )}
 
         <ul className="today">
           {quests.map((q) => {
-            const isDone = done.includes(q.landId);
+            const isDone = q.state === "done";
+            const isLocked = q.state === "locked";
             return (
               <li
-                key={q.landId}
+                key={q.id}
                 className={`today-item ${isDone ? "today-done" : ""}`}
                 style={{ "--land": q.color } as CSSProperties}
               >
@@ -222,7 +234,15 @@ export default function Dashboard() {
                 </div>
                 <div className="today-side">
                   <span className="xp">+{q.xp} XP</span>
-                  {isDone ? (
+                  {isLocked ? (
+                    <button type="button" className="btn btn-ghost" disabled>
+                      Закрыт
+                    </button>
+                  ) : isDone && q.replay ? (
+                    <Link href={`/quest/${q.id}`} className="btn btn-ghost">
+                      Играть снова
+                    </Link>
+                  ) : isDone ? (
                     <button type="button" className="btn" disabled>
                       Пройден
                     </button>
@@ -238,55 +258,67 @@ export default function Dashboard() {
         </ul>
       </section>
 
-      {hasEnglish && (
-        <section>
-          <h2 className="section-title">Путь английского</h2>
-          <p className="dim focus-line">
-            Выбери свой уровень. Когда пройдёшь все главы уровня, следующий
-            откроется сам.
-          </p>
+      {pathLands.map((land) => {
+        const levels = levelsOf(land.id);
+        const curLevel = getLevel(save, land.id);
+        return (
+          <section key={land.id}>
+            <h2 className="section-title">{LEVEL_SETS[land.id].pathTitle}</h2>
+            <p className="dim focus-line">
+              Выбери свой уровень. Когда пройдёшь все главы уровня, следующий
+              откроется сам.
+              {land.id === "code" && (
+                <>
+                  {" "}
+                  <Link href="/terminal" className="link-btn">
+                    Открыть терминал
+                  </Link>
+                </>
+              )}
+            </p>
 
-          <ul className="levels">
-            {LEVELS.map((lv, i) => {
-              const p = levelProgress(save, lv.id);
-              const now = save.level === lv.id;
-              const pct = p.total > 0 ? Math.round((p.passed / p.total) * 100) : 0;
-              return (
-                <li
-                  key={lv.id}
-                  className={`level ${now ? "level-now" : ""} ${p.complete ? "level-done" : ""}`}
-                  style={{ animationDelay: `${i * 90}ms` }}
-                >
-                  <span className="level-code">{lv.code}</span>
-                  <span className="level-title">{lv.title}</span>
-                  <span className="dim">{lv.desc}</span>
-                  <div
-                    className="bar"
-                    role="progressbar"
-                    aria-label={`Прогресс ${lv.code}`}
-                    aria-valuenow={pct}
-                    aria-valuemin={0}
-                    aria-valuemax={100}
+            <ul className="levels">
+              {levels.map((lv, i) => {
+                const p = levelProgress(save, lv.id, land.id);
+                const now = curLevel === lv.id;
+                const pct = p.total > 0 ? Math.round((p.passed / p.total) * 100) : 0;
+                return (
+                  <li
+                    key={lv.id}
+                    className={`level ${now ? "level-now" : ""} ${p.complete ? "level-done" : ""}`}
+                    style={{ animationDelay: `${i * 90}ms` }}
                   >
-                    <div className="bar-fill" style={{ width: `${pct}%` }} />
-                  </div>
-                  <span className="dim">
-                    Глав пройдено: {p.passed} из {p.total}
-                  </span>
-                  <button
-                    type="button"
-                    className={now ? "btn" : "btn btn-ghost"}
-                    disabled={now}
-                    onClick={() => update({ ...save, level: lv.id })}
-                  >
-                    {now ? "Сейчас учишь" : `Выбрать ${lv.code}`}
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      )}
+                    <span className="level-code">{lv.code}</span>
+                    <span className="level-title">{lv.title}</span>
+                    <span className="dim">{lv.desc}</span>
+                    <div
+                      className="bar"
+                      role="progressbar"
+                      aria-label={`Прогресс ${lv.code}`}
+                      aria-valuenow={pct}
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                    >
+                      <div className="bar-fill" style={{ width: `${pct}%` }} />
+                    </div>
+                    <span className="dim">
+                      Глав пройдено: {p.passed} из {p.total}
+                    </span>
+                    <button
+                      type="button"
+                      className={now ? "btn" : "btn btn-ghost"}
+                      disabled={now}
+                      onClick={() => update(setLevel(save, land.id, lv.id))}
+                    >
+                      {now ? "Сейчас учишь" : `Выбрать ${lv.code}`}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        );
+      })}
 
       <button type="button" className="btn btn-ghost demo" onClick={onSkip}>
         Демо: пропустить день
