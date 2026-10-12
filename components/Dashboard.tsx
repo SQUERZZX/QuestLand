@@ -16,7 +16,58 @@ import {
 } from "@/lib/progressionManager";
 import { EMPTY_SAVE, loadSave, writeSave } from "@/lib/storage";
 import type { SaveData } from "@/lib/storage";
-import styles from "@/components/LandSection.module.css";
+
+const LAND_CSS = `
+.ls-focus {
+  margin: 28px 0 0;
+}
+
+.ls-block {
+  margin-top: 40px;
+  padding-top: 32px;
+  border-top: 2px solid var(--land);
+}
+
+.ls-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+.ls-title {
+  font-size: 2.2rem;
+  color: var(--land);
+  margin-bottom: 8px;
+}
+
+.ls-tagline {
+  margin: 0;
+}
+
+.ls-term {
+  margin-top: 4px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.ls-sub {
+  font-family: var(--font-display), serif;
+  font-size: 1.45rem;
+  margin: 40px 0 16px;
+}
+
+.ls-hint {
+  margin: 0 0 20px;
+}
+
+@media (max-width: 640px) {
+  .ls-head {
+    flex-direction: column;
+  }
+}
+`;
 
 export default function Dashboard() {
   const [save, setSave] = useState<SaveData>(EMPTY_SAVE);
@@ -150,6 +201,7 @@ export default function Dashboard() {
 
   return (
     <main className="wrap">
+      <style>{LAND_CSS}</style>
       <header className="top">
         <Link href="/" className="logo">
           QuestLands
@@ -213,7 +265,7 @@ export default function Dashboard() {
       </section>
 
       <section>
-        <p className={`dim ${styles.focus}`}>
+        <p className={`dim ls-focus`}>
           Направление: {focusNames}.{" "}
           <button type="button" className="link-btn" onClick={changeFocus}>
             Сменить
@@ -236,22 +288,22 @@ export default function Dashboard() {
         return (
           <section
             key={land.id}
-            className={styles.block}
+            className="ls-block"
             style={{ "--land": land.color } as CSSProperties}
           >
-            <div className={styles.head}>
+            <div className="ls-head">
               <div>
-                <h2 className={styles.title}>{land.name}</h2>
-                <p className={`dim ${styles.tagline}`}>{land.tagline}</p>
+                <h2 className="ls-title">{land.name}</h2>
+                <p className={`dim ls-tagline`}>{land.tagline}</p>
               </div>
               {land.id === "code" && (
-                <Link href="/terminal" className={`btn btn-ghost ${styles.term}`}>
+                <Link href="/terminal" className={`btn btn-ghost ls-term`}>
                   ⌨ Терминал
                 </Link>
               )}
             </div>
 
-            <h3 className={styles.sub}>Квесты</h3>
+            <h3 className="ls-sub">Квесты</h3>
             <ul className="today">
               {landQuests.map((q) => {
                 const isDone = q.state === "done";
@@ -290,8 +342,8 @@ export default function Dashboard() {
 
             {withPath && (
               <>
-                <h3 className={styles.sub}>{LEVEL_SETS[land.id].pathTitle}</h3>
-                <p className={`dim ${styles.hint}`}>
+                <h3 className="ls-sub">{LEVEL_SETS[land.id].pathTitle}</h3>
+                <p className={`dim ls-hint`}>
                   Выбери свой уровень. Когда пройдёшь все главы уровня,
                   следующий откроется сам.
                 </p>
