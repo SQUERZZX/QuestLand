@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import CodeChallenge from "@/components/CodeChallenge";
 import type { Chapter, Theme } from "@/lib/chapters";
 import type { Question } from "@/lib/quests";
 
@@ -268,6 +269,19 @@ export default function GameWorld({ chapter, onFinish }: Props) {
     const q = chapter.npcs[npcIndex].question;
     setResults((r) => r.map((v, idx) => (idx === npcIndex ? i === q.answer : v)));
     setDialogue({ ...dialogue, picked: i });
+  }
+
+  // Задание с кодом: верно решено (true) или игрок сдался (false)
+  function finishTask(ok: boolean) {
+    if (!dialogue || dialogue.kind !== "npc") return;
+    const npcIndex = dialogue.npc;
+    setResults((r) => r.map((v, idx) => (idx === npcIndex ? ok : v)));
+    const allDone = results.every((r, idx) => idx === npcIndex || r !== null);
+    setDialogue(
+      allDone
+        ? { kind: "story", lines: chapter.outro, line: 0, finish: true }
+        : null,
+    );
   }
 
   function afterAnswer() {
@@ -1159,7 +1173,20 @@ export default function GameWorld({ chapter, onFinish }: Props) {
         </div>
       )}
 
-      {dialogue?.kind === "npc" && npcNow && question && dialogue.stage === "question" && (
+      {dialogue?.kind === "npc" && npcNow && npcNow.task && dialogue.stage === "question" && (
+        <div className="talk-wrap">
+          <CodeChallenge
+            key={npcNow.id}
+            speaker={npcNow.name}
+            color={npcNow.color}
+            task={npcNow.task}
+            onSolved={() => finishTask(true)}
+            onGiveUp={() => finishTask(false)}
+          />
+        </div>
+      )}
+
+      {dialogue?.kind === "npc" && npcNow && !npcNow.task && question && dialogue.stage === "question" && (
         <div className="talk-wrap">
           <Ask
             speaker={npcNow.name}

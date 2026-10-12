@@ -1,5 +1,6 @@
 import type { LevelId } from "@/lib/levels";
 import type { Question } from "@/lib/quests";
+import type { CodeTask } from "@/lib/codeTasks";
 
 export type Theme = "village" | "market" | "port" | "peaks";
 
@@ -12,6 +13,7 @@ export type Npc = {
   lines: string[]; // что говорит перед заданием
   after: string; // что говорит, если с ним заговорить снова
   question: Question;
+  task?: CodeTask; // если задано, вместо вариантов ответа открывается терминал
 };
 
 export type Platform = { x: number; y: number; w: number }; // можно запрыгнуть снизу

@@ -1478,3 +1478,54 @@ a.hud-chip:hover {
   font-size: 0.95rem;
   text-decoration: none;
 }
+
+/* ---------- Задание с кодом у жителя ---------- */
+.code-ask {
+  position: relative;
+}
+
+.code-ask .talk-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.code-ask .term {
+  margin: 10px 0;
+}
+
+.code-fail-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  border-radius: 12px;
+  background: rgba(5, 8, 18, 0.82);
+}
+
+.code-fail {
+  width: min(480px, 100%);
+  padding: 18px 20px;
+  background: var(--panel);
+  border: 2px solid var(--danger);
+  border-radius: 14px;
+}
+
+.code-fail h3 {
+  margin: 0 0 8px;
+  color: #ff8a8c;
+}
+
+.code-fail pre {
+  margin: 8px 0;
+  padding: 8px 10px;
+  background: #070b17;
+  border-radius: 8px;
+  white-space: pre-wrap;
+}
+
+.code-fail .btn {
+  margin-top: 10px;
+}

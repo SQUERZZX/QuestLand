@@ -1,5 +1,6 @@
 import { LAYOUT_A, LAYOUT_B, make } from "@/lib/chapterKit";
 import type { Chapter, Meta, NpcDef } from "@/lib/chapterKit";
+import { CODE_TASKS } from "@/lib/codeTasks";
 
 /*
   Лес кода: те же миры и тот же движок, что и у английского.
@@ -40,6 +41,7 @@ function chapter(meta: Meta, rows: Row[]): Chapter {
       lines: [l1, l2],
       after,
       question: { prompt, options, answer: pos, explain },
+      task: CODE_TASKS[meta.id]?.[i],
     };
   });
   return make(meta, layout, defs, "code");
