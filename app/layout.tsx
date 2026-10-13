@@ -1,9 +1,10 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
 import { Alegreya, Alegreya_Sans } from "next/font/google";
 import "./globals.css";
 import "./assistant.css";
 import "./landscape.css";
+import "./polish.css";
 import ClickSound from "@/components/ClickSound";
 import Assistant from "@/components/Assistant";
 
@@ -18,6 +19,11 @@ const body = Alegreya_Sans({
   variable: "--font-body",
   weight: ["400", "500", "700"],
 });
+
+export const viewport: Viewport = {
+  themeColor: "#0b1020",
+  viewportFit: "cover",
+};
 
 export const metadata: Metadata = {
   title: "QuestLands",

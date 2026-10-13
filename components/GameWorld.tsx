@@ -19,6 +19,8 @@ const JUMP = 640;
 const GRAVITY = 1800;
 const TALK_X = 80;
 const TALK_Y = 60;
+const MAX_DPR = 2;
+const MAX_PARTS = 260;
 
 const LEFT_CODES = ["ArrowLeft", "KeyA"];
 const RIGHT_CODES = ["ArrowRight", "KeyD"];
@@ -478,7 +480,7 @@ export default function GameWorld({ chapter, onFinish }: Props) {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d", { alpha: false });
     if (!ctx) return;
 
     const calm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -494,8 +496,14 @@ export default function GameWorld({ chapter, onFinish }: Props) {
     let offsetY = 0;
     let camX = 0;
 
+    let q = 2; // качество: 2 — максимум, 0 — для слабых устройств
+    let ambK = 1; // доля фоновых частиц
+    let needResize = false;
+    let cachesDirty = true;
+
     const resize = () => {
-      dpr = window.devicePixelRatio || 1;
+      const cap = q >= 2 ? MAX_DPR : q === 1 ? 1.5 : 1;
+      dpr = Math.min(window.devicePixelRatio || 1, cap);
       cssW = window.innerWidth;
       cssH = window.innerHeight;
       canvas.width = Math.round(cssW * dpr);
@@ -504,9 +512,14 @@ export default function GameWorld({ chapter, onFinish }: Props) {
       viewW = cssW / scale;
       viewH = cssH / scale;
       offsetY = viewH - VIEW_H;
+      cachesDirty = true;
     };
     resize();
-    window.addEventListener("resize", resize);
+    // пересчёт откладываем до следующего кадра, чтобы адресная строка телефона не дёргала память
+    const onResize = () => {
+      needResize = true;
+    };
+    window.addEventListener("resize", onResize);
 
     const clamp = (v: number, min: number, max: number) =>
       Math.min(max, Math.max(min, v));
@@ -566,7 +579,7 @@ export default function GameWorld({ chapter, onFinish }: Props) {
     const parts: Particle[] = [];
 
     const spark = (x: number, y: number, color: string, n: number) => {
-      if (calm) return;
+      if (calm || parts.length > MAX_PARTS) return;
       for (let i = 0; i < n; i++) {
         const life = rand(0.5, 1);
         parts.push({
@@ -585,7 +598,7 @@ export default function GameWorld({ chapter, onFinish }: Props) {
     };
 
     const dust = (x: number, y: number, n: number) => {
-      if (calm) return;
+      if (calm || parts.length > MAX_PARTS) return;
       for (let i = 0; i < n; i++) {
         const life = rand(0.35, 0.65);
         parts.push({
@@ -858,19 +871,22 @@ export default function GameWorld({ chapter, onFinish }: Props) {
       ctx.fillRect(x0, y, x1 - x0, h);
       ctx.fillStyle = th.dirt[1];
       ctx.fillRect(x0, y + 44, x1 - x0, Math.max(0, h - 44));
-      for (let gx = Math.floor(x0 / 24) * 24; gx < x1; gx += 24) {
-        for (let gy = y + 14; gy < Math.min(y + h, VIEW_H + 10); gy += 24) {
-          const r = rnd(gx * 0.31 + gy * 0.17);
-          if (r > 0.55) {
-            ctx.fillStyle = r > 0.8 ? "rgba(255,255,255,0.09)" : "rgba(255,255,255,0.05)";
-            ctx.fillRect(gx + r * 14, gy + r * 8, 6, 5);
-          }
+      if (dirtPattern) {
+        const py = y + 14;
+        const ph = Math.min(y + h, VIEW_H + 10) - py;
+        if (ph > 0) {
+          ctx.fillStyle = dirtPattern;
+          ctx.fillRect(x0, py, x1 - x0, ph);
         }
       }
+      ctx.fillStyle = "rgba(0,0,0,0.22)";
+      ctx.fillRect(x0, y + 8, x1 - x0, 4);
       ctx.fillStyle = th.grass[0];
       ctx.fillRect(x0, y, x1 - x0, 8);
       ctx.fillStyle = th.grass[1];
       ctx.fillRect(x0, y, x1 - x0, 3);
+      ctx.fillStyle = "rgba(255,255,255,0.22)";
+      ctx.fillRect(x0, y, x1 - x0, 1);
     };
 
     const drawPlatform = (p: { x: number; y: number; w: number }) => {
@@ -972,13 +988,7 @@ export default function GameWorld({ chapter, onFinish }: Props) {
 
     const drawLamp = (x: number, t: number) => {
       const flick = 0.35 + Math.sin(t * 5 + x) * 0.05;
-      const g = ctx.createRadialGradient(x, GROUND_Y - 74, 2, x, GROUND_Y - 74, 70);
-      g.addColorStop(0, `rgba(255,200,87,${flick})`);
-      g.addColorStop(1, "rgba(255,200,87,0)");
-      ctx.fillStyle = g;
-      ctx.beginPath();
-      ctx.arc(x, GROUND_Y - 74, 70, 0, Math.PI * 2);
-      ctx.fill();
+      glowAt(x, GROUND_Y - 74, 70, "255,200,87", flick);
       ctx.fillStyle = "#2b3350";
       ctx.fillRect(x - 2, GROUND_Y - 70, 4, 70);
       ctx.fillStyle = "#ffc857";
@@ -990,13 +1000,7 @@ export default function GameWorld({ chapter, onFinish }: Props) {
       const topY = GROUND_Y - 230;
       const hw = (y: number) => 18 + 12 * ((y - topY) / 230);
 
-      const glow = ctx.createRadialGradient(x, topY - 14, 4, x, topY - 14, 60 + 200 * lit);
-      glow.addColorStop(0, `rgba(255,200,87,${0.2 + 0.6 * lit})`);
-      glow.addColorStop(1, "rgba(255,200,87,0)");
-      ctx.fillStyle = glow;
-      ctx.beginPath();
-      ctx.arc(x, topY - 14, 260, 0, Math.PI * 2);
-      ctx.fill();
+      glowAt(x, topY - 14, 60 + 200 * lit, "255,200,87", 0.2 + 0.6 * lit);
 
       // вращающийся луч
       if (lit > 0) {
@@ -1292,13 +1296,7 @@ export default function GameWorld({ chapter, onFinish }: Props) {
     const drawGem = (g: { x: number; y: number; got: boolean }, i: number, t: number) => {
       if (g.got || g.x < camX - 30 || g.x > camX + viewW + 30) return;
       const y = g.y + Math.sin(t * 2.4 + i) * 3;
-      const glow = ctx.createRadialGradient(g.x, y, 1, g.x, y, 16);
-      glow.addColorStop(0, "rgba(255,255,255,0.35)");
-      glow.addColorStop(1, "rgba(255,255,255,0)");
-      ctx.fillStyle = glow;
-      ctx.beginPath();
-      ctx.arc(g.x, y, 16, 0, Math.PI * 2);
-      ctx.fill();
+      glowAt(g.x, y, 24, gemRgb, 0.5 + 0.15 * Math.sin(t * 3 + i));
       ctx.fillStyle = th.gem;
       ctx.beginPath();
       ctx.moveTo(g.x, y - 9);
@@ -1316,14 +1314,31 @@ export default function GameWorld({ chapter, onFinish }: Props) {
       ctx.fill();
     };
 
+    // Свечения рисуем готовым спрайтом, а не новым градиентом на каждый вызов
+    const glowSprites = new Map<string, HTMLCanvasElement>();
+    const glowSprite = (rgb: string) => {
+      let c = glowSprites.get(rgb);
+      if (!c) {
+        c = document.createElement("canvas");
+        c.width = 128;
+        c.height = 128;
+        const g = c.getContext("2d");
+        if (g) {
+          const gr = g.createRadialGradient(64, 64, 3, 64, 64, 64);
+          gr.addColorStop(0, `rgba(${rgb},1)`);
+          gr.addColorStop(1, `rgba(${rgb},0)`);
+          g.fillStyle = gr;
+          g.fillRect(0, 0, 128, 128);
+        }
+        glowSprites.set(rgb, c);
+      }
+      return c;
+    };
+
     const glowAt = (x: number, y: number, r: number, rgb: string, a: number) => {
-      const g = ctx.createRadialGradient(x, y, 2, x, y, r);
-      g.addColorStop(0, `rgba(${rgb},${a})`);
-      g.addColorStop(1, `rgba(${rgb},0)`);
-      ctx.fillStyle = g;
-      ctx.beginPath();
-      ctx.arc(x, y, r, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.globalAlpha = Math.min(1, Math.max(0, a));
+      ctx.drawImage(glowSprite(rgb), x - r, y - r, r * 2, r * 2);
+      ctx.globalAlpha = 1;
     };
 
     const drawGoal = (x: number, t: number) => {
@@ -1910,7 +1925,9 @@ export default function GameWorld({ chapter, onFinish }: Props) {
     };
 
     const drawAmbient = (t: number) => {
-      amb.forEach((a) => {
+      const lim = amb.length * ambK;
+      amb.forEach((a, ai) => {
+        if (ai >= lim) return;
         if (th.ambient === "fireflies") {
           const x = a.x + Math.sin(t * 0.8 + a.p) * 14;
           const y = a.y + Math.cos(t * 0.6 + a.p * 1.7) * 10;
@@ -1980,40 +1997,604 @@ export default function GameWorld({ chapter, onFinish }: Props) {
       });
     };
 
-    const draw = (t: number) => {
-      // небо
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      const sky = ctx.createLinearGradient(0, 0, 0, cssH);
-      sky.addColorStop(0, th.sky[0]);
-      sky.addColorStop(0.6, th.sky[1]);
-      sky.addColorStop(1, th.sky[2]);
-      ctx.fillStyle = sky;
-      ctx.fillRect(0, 0, cssW, cssH);
+    /* --- кэши, декорации и атмосфера --- */
 
-      STARS.forEach((s) => {
-        ctx.fillStyle = `rgba(243,238,223,${(0.4 + 0.5 * Math.sin(t * 1.5 + s.p)) * th.stars})`;
-        ctx.fillRect(s.x * cssW, s.y * cssH * 0.7, s.r, s.r);
-      });
+    const gemRgb = rgbOf(th.gem).join(",");
+    const skyDim = shade(th.mid, -0.35);
+    const fgColor = shade(th.far, -0.55);
+    const bladeFg = th.decor !== "crystals" && th.decor !== "antennas" && th.decor !== "pillars";
+    const moonish = th.decor === "pines" || th.decor === "masts" || th.decor === "trees" || th.decor === "crystals";
+    const cloudA: Record<Decor, number> = {
+      pines: th.snowy ? 0.16 : 0.1,
+      stalls: 0.35,
+      masts: 0.28,
+      trees: 0.08,
+      crystals: 0,
+      pillars: 0.3,
+      antennas: 0,
+    };
+    const rayRgb: Record<Decor, string> = {
+      pines: th.snowy ? "220,232,255" : "190,200,255",
+      stalls: "255,200,150",
+      masts: "200,230,255",
+      trees: "225,255,190",
+      crystals: "170,140,255",
+      pillars: "255,222,170",
+      antennas: "",
+    };
 
-      const orbR = Math.max(16, 22 * scale);
-      const ox = cssW * 0.8;
-      const oy = cssH * th.orbY;
-      const halo = ctx.createRadialGradient(ox, oy, 2, ox, oy, orbR * 3);
-      halo.addColorStop(0, "rgba(255,255,255,0.22)");
-      halo.addColorStop(1, "rgba(255,255,255,0)");
-      ctx.fillStyle = halo;
-      ctx.fillRect(0, 0, cssW, cssH);
-      ctx.fillStyle = th.orb;
-      ctx.beginPath();
-      ctx.arc(ox, oy, orbR, 0, Math.PI * 2);
-      ctx.fill();
-      if (th.ring) {
-        ctx.strokeStyle = "rgba(255,230,190,0.75)";
-        ctx.lineWidth = Math.max(2, orbR * 0.16);
-        ctx.beginPath();
-        ctx.ellipse(ox, oy, orbR * 1.9, orbR * 0.5, -0.35, 0, Math.PI * 2);
-        ctx.stroke();
+    let backdrop: HTMLCanvasElement | null = null;
+    let vignette: HTMLCanvasElement | null = null;
+    let rays: HTMLCanvasElement | null = null;
+    let cloud: HTMLCanvasElement | null = null;
+    let orbX = 0;
+    let orbYpx = 0;
+    let orbRad = 0;
+
+    // Текстура земли: один раз рисуем плитку и дальше заливаем паттерном
+    let dirtPattern: CanvasPattern | null = null;
+    {
+      const tile = document.createElement("canvas");
+      tile.width = 960;
+      tile.height = 528;
+      const g = tile.getContext("2d");
+      if (g) {
+        g.scale(2, 2);
+        for (let gx = 0; gx < 480; gx += 24) {
+          for (let gy = 0; gy < 264; gy += 24) {
+            const r = rnd(gx * 0.31 + gy * 0.17 + 3);
+            if (r > 0.55) {
+              g.fillStyle = r > 0.8 ? "rgba(255,255,255,0.09)" : "rgba(255,255,255,0.05)";
+              g.fillRect(gx + r * 14, gy + r * 8, 6, 5);
+            }
+            const r2 = rnd(gx * 0.77 + gy * 0.41 + 9);
+            if (r2 > 0.86) {
+              g.fillStyle = "rgba(0,0,0,0.16)";
+              g.fillRect(gx + r2 * 12, gy + r2 * 10, 8, 4);
+            }
+          }
+        }
+        dirtPattern = ctx.createPattern(tile, "repeat");
+        try {
+          dirtPattern?.setTransform(new DOMMatrix().scale(0.5));
+        } catch {
+          /* старый браузер: останется мелкая текстура */
+        }
       }
+    }
+
+    const makeLayer = () => {
+      const c = document.createElement("canvas");
+      c.width = canvas.width;
+      c.height = canvas.height;
+      const g = c.getContext("2d");
+      if (g) g.setTransform(dpr, 0, 0, dpr, 0, 0);
+      return { c, g };
+    };
+
+    const rebuildCaches = () => {
+      orbRad = Math.max(16, 22 * scale);
+      orbX = cssW * 0.8;
+      orbYpx = cssH * th.orbY;
+
+      // небо, светило, дымка у горизонта
+      {
+        const { c, g } = makeLayer();
+        if (g) {
+          const sky = g.createLinearGradient(0, 0, 0, cssH);
+          sky.addColorStop(0, th.sky[0]);
+          sky.addColorStop(0.6, th.sky[1]);
+          sky.addColorStop(1, th.sky[2]);
+          g.fillStyle = sky;
+          g.fillRect(0, 0, cssW, cssH);
+
+          if (th.decor === "antennas") {
+            const blobs: [number, number, number, string][] = [
+              [0.25, 0.3, 0.45, "139,92,246"],
+              [0.7, 0.55, 0.4, "56,189,248"],
+              [0.5, 0.15, 0.35, "255,107,139"],
+            ];
+            blobs.forEach(([bx, by, br, rgb]) => {
+              const r = Math.max(cssW, cssH) * br;
+              const gr = g.createRadialGradient(cssW * bx, cssH * by, 0, cssW * bx, cssH * by, r);
+              gr.addColorStop(0, `rgba(${rgb},0.2)`);
+              gr.addColorStop(1, `rgba(${rgb},0)`);
+              g.fillStyle = gr;
+              g.fillRect(0, 0, cssW, cssH);
+            });
+            const pr = Math.min(cssW, cssH) * 0.1;
+            const px = cssW * 0.18;
+            const py = cssH * 0.3;
+            const pg = g.createRadialGradient(px - pr * 0.4, py - pr * 0.4, pr * 0.1, px, py, pr);
+            pg.addColorStop(0, "#7b6bff");
+            pg.addColorStop(1, "#1b1550");
+            g.fillStyle = pg;
+            g.beginPath();
+            g.arc(px, py, pr, 0, Math.PI * 2);
+            g.fill();
+          }
+
+          const haze = g.createLinearGradient(0, cssH * 0.45, 0, cssH);
+          haze.addColorStop(0, `rgba(${th.fog},0)`);
+          haze.addColorStop(1, `rgba(${th.fog},0.22)`);
+          g.fillStyle = haze;
+          g.fillRect(0, cssH * 0.45, cssW, cssH * 0.55);
+
+          const halo = g.createRadialGradient(orbX, orbYpx, 2, orbX, orbYpx, orbRad * 6);
+          halo.addColorStop(0, "rgba(255,255,255,0.28)");
+          halo.addColorStop(0.35, `rgba(${th.fog},0.1)`);
+          halo.addColorStop(1, "rgba(255,255,255,0)");
+          g.fillStyle = halo;
+          g.fillRect(0, 0, cssW, cssH);
+
+          g.fillStyle = th.orb;
+          g.beginPath();
+          g.arc(orbX, orbYpx, orbRad, 0, Math.PI * 2);
+          g.fill();
+          if (moonish) {
+            g.fillStyle = "rgba(0,0,0,0.07)";
+            const craters: [number, number, number][] = [
+              [-0.3, -0.2, 0.28],
+              [0.35, 0.15, 0.2],
+              [-0.1, 0.4, 0.15],
+            ];
+            craters.forEach(([dx, dy, k]) => {
+              g.beginPath();
+              g.arc(orbX + dx * orbRad, orbYpx + dy * orbRad, k * orbRad, 0, Math.PI * 2);
+              g.fill();
+            });
+          }
+          if (th.ring) {
+            g.strokeStyle = "rgba(255,230,190,0.75)";
+            g.lineWidth = Math.max(2, orbRad * 0.16);
+            g.beginPath();
+            g.ellipse(orbX, orbYpx, orbRad * 1.9, orbRad * 0.5, -0.35, 0, Math.PI * 2);
+            g.stroke();
+          }
+        }
+        backdrop = c;
+      }
+
+      // виньетка
+      {
+        const { c, g } = makeLayer();
+        if (g) {
+          const r = Math.hypot(cssW, cssH) * 0.62;
+          const v = g.createRadialGradient(cssW / 2, cssH * 0.55, r * 0.45, cssW / 2, cssH * 0.55, r);
+          v.addColorStop(0, "rgba(0,0,0,0)");
+          v.addColorStop(1, "rgba(3,5,16,0.55)");
+          g.fillStyle = v;
+          g.fillRect(0, 0, cssW, cssH);
+        }
+        vignette = c;
+      }
+
+      // лучи света (только на хорошем качестве)
+      rays = null;
+      const rgbRay = rayRgb[th.decor];
+      if (rgbRay && q >= 2) {
+        const { c, g } = makeLayer();
+        if (g) {
+          for (let k = 0; k < 5; k++) {
+            const sx = orbX + (k - 2) * cssW * 0.05 - cssW * 0.02 * k;
+            const w0 = cssW * 0.015 + (k % 2) * cssW * 0.01;
+            const dx = -cssW * 0.35 - k * cssW * 0.04;
+            const hgt = cssH * 0.95;
+            const gr = g.createLinearGradient(sx, 0, sx + dx, hgt);
+            gr.addColorStop(0, `rgba(${rgbRay},0.55)`);
+            gr.addColorStop(0.7, `rgba(${rgbRay},0.08)`);
+            gr.addColorStop(1, `rgba(${rgbRay},0)`);
+            g.fillStyle = gr;
+            g.beginPath();
+            g.moveTo(sx - w0, 0);
+            g.lineTo(sx + w0, 0);
+            g.lineTo(sx + dx + w0 * 4, hgt);
+            g.lineTo(sx + dx - w0 * 4, hgt);
+            g.closePath();
+            g.fill();
+          }
+        }
+        rays = c;
+      }
+
+      // облако-спрайт
+      cloud = null;
+      if (cloudA[th.decor] > 0) {
+        const c = document.createElement("canvas");
+        c.width = 320;
+        c.height = 110;
+        const g = c.getContext("2d");
+        if (g) {
+          const puffs: [number, number, number, number][] = [
+            [70, 60, 110, 46],
+            [130, 48, 130, 56],
+            [200, 58, 120, 48],
+            [250, 64, 90, 36],
+            [110, 70, 160, 40],
+          ];
+          g.globalAlpha = 0.55;
+          puffs.forEach(([cx, cy, w, h]) => g.drawImage(glowSprite(th.fog), cx - w / 2, cy - h / 2, w, h));
+        }
+        cloud = c;
+      }
+    };
+
+    // Мелочи на земле: трава, цветы, грибы, камни
+    type Bit = { x: number; k: number; c: number };
+    const bits: Bit[] = [];
+    for (let i = 0, x = 40; x < worldW - 30; i++, x += 24 + rnd(i * 1.3 + 2) * 44) {
+      if (chapter.spikes.some((sp) => x > sp.x - 14 && x < sp.x + sp.w + 14)) continue;
+      if (chapter.blocks.some((b) => x > b.x - 8 && x < b.x + b.w + 8)) continue;
+      bits.push({ x, k: rnd(i + 5.5), c: rnd(i + 9.1) });
+    }
+    const flowerCols = th.decor === "trees" ? ["#ff7be5", "#ffd166", "#f3eedf"] : ["#ffd166", "#f3eedf", "#9fb0ff"];
+
+    const drawBit = (b: Bit, t: number) => {
+      const x = b.x;
+      const sway = Math.sin(t * 1.6 + x * 0.05) * 1.6;
+
+      if (th.snowy) {
+        ctx.fillStyle = "rgba(238,244,255,0.9)";
+        ctx.beginPath();
+        ctx.ellipse(x, GROUND_Y + 1, 12 + b.k * 10, 4 + b.c * 3, 0, Math.PI, 0);
+        ctx.fill();
+        if (b.c > 0.7) {
+          ctx.fillStyle = "rgba(190,224,255,0.85)";
+          ctx.beginPath();
+          ctx.moveTo(x - 4, GROUND_Y + 1);
+          ctx.lineTo(x - 1, GROUND_Y - 10 - b.k * 8);
+          ctx.lineTo(x + 4, GROUND_Y + 1);
+          ctx.closePath();
+          ctx.fill();
+        }
+        return;
+      }
+
+      if (th.decor === "crystals") {
+        const h = 8 + b.k * 10;
+        const cap = 7 + b.c * 5;
+        const col = b.c > 0.5 ? "255,123,229" : "125,200,255";
+        glowAt(x, GROUND_Y - h, cap * 2.6, col, 0.32 + 0.14 * Math.sin(t * 2 + x));
+        ctx.fillStyle = "#d9d3ff";
+        ctx.fillRect(x - 1.5, GROUND_Y - h, 3, h + 1);
+        ctx.fillStyle = `rgb(${col})`;
+        ctx.beginPath();
+        ctx.ellipse(x, GROUND_Y - h, cap, cap * 0.65, 0, Math.PI, 0);
+        ctx.fill();
+        return;
+      }
+
+      if (th.decor === "pillars") {
+        ctx.fillStyle = "#a8936f";
+        ctx.beginPath();
+        ctx.moveTo(x - 7, GROUND_Y + 1);
+        ctx.lineTo(x - 5, GROUND_Y - 5 - b.k * 4);
+        ctx.lineTo(x + 1, GROUND_Y - 7 - b.k * 3);
+        ctx.lineTo(x + 7, GROUND_Y + 1);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = "rgba(255,255,255,0.18)";
+        ctx.fillRect(x - 4, GROUND_Y - 6 - b.k * 3, 6, 2);
+        if (b.c > 0.6) {
+          ctx.strokeStyle = "#7a6a3e";
+          ctx.lineWidth = 1.4;
+          ctx.beginPath();
+          for (let j = -1; j <= 1; j++) {
+            ctx.moveTo(x + 14, GROUND_Y);
+            ctx.lineTo(x + 14 + j * 5 + sway * 0.4, GROUND_Y - 10 - Math.abs(j) * -2);
+          }
+          ctx.stroke();
+        }
+        return;
+      }
+
+      if (th.decor === "antennas") {
+        const h = 8 + b.k * 14;
+        glowAt(x, GROUND_Y - h * 0.5, 16, gemRgb, 0.3);
+        ctx.fillStyle = th.gem;
+        ctx.beginPath();
+        ctx.moveTo(x - 3, GROUND_Y + 1);
+        ctx.lineTo(x, GROUND_Y - h);
+        ctx.lineTo(x + 3, GROUND_Y + 1);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = "rgba(255,255,255,0.45)";
+        ctx.beginPath();
+        ctx.moveTo(x - 3, GROUND_Y + 1);
+        ctx.lineTo(x, GROUND_Y - h);
+        ctx.lineTo(x - 0.5, GROUND_Y + 1);
+        ctx.closePath();
+        ctx.fill();
+        return;
+      }
+
+      // травяной пучок
+      const n = 3 + Math.floor(b.k * 3);
+      ctx.fillStyle = th.grass[1];
+      ctx.beginPath();
+      for (let j = 0; j < n; j++) {
+        const bx = x + (j - (n - 1) / 2) * 3.2;
+        const bh = 7 + ((j * 7 + Math.floor(b.c * 10)) % 6) + b.k * 5;
+        const lean = (j - (n - 1) / 2) * 2.2 + sway;
+        ctx.moveTo(bx - 1.6, GROUND_Y + 1);
+        ctx.lineTo(bx + lean, GROUND_Y - bh);
+        ctx.lineTo(bx + 1.6, GROUND_Y + 1);
+      }
+      ctx.fill();
+      if (b.c > 0.8 && (th.decor === "pines" || th.decor === "trees")) {
+        ctx.strokeStyle = th.grass[0];
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.moveTo(x + 8, GROUND_Y);
+        ctx.lineTo(x + 8 + sway * 0.5, GROUND_Y - 12);
+        ctx.stroke();
+        ctx.fillStyle = flowerCols[Math.floor(b.k * 3) % 3];
+        ctx.beginPath();
+        ctx.arc(x + 8 + sway * 0.5, GROUND_Y - 13, 2.6, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    };
+
+    const drawBits = (t: number) => {
+      for (let i = 0; i < bits.length; i++) {
+        const b = bits[i];
+        if (b.x < camX - 40) continue;
+        if (b.x > camX + viewW + 40) break;
+        drawBit(b, t);
+      }
+    };
+
+    // Облака и северное сияние
+    const drawClouds = (t: number) => {
+      if (!cloud) return;
+      const span = cssW + 500;
+      for (let i = 0; i < 5; i++) {
+        const sp = 6 + i * 3;
+        const raw = i * 397 + t * sp * scale - camX * scale * 0.05 * (1 + i * 0.3);
+        const x = (((raw % span) + span) % span) - 250;
+        const sz = (0.8 + (i % 3) * 0.35) * scale;
+        ctx.globalAlpha = cloudA[th.decor] * (0.6 + 0.4 * ((i % 3) / 2));
+        ctx.drawImage(cloud, x, cssH * (0.08 + 0.07 * i), 320 * sz, 110 * sz);
+      }
+      ctx.globalAlpha = 1;
+    };
+
+    const AURORA = ["80,255,190", "120,160,255", "200,120,255"];
+    const drawAurora = (t: number) => {
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.globalCompositeOperation = "lighter";
+      for (let k = 0; k < 3; k++) {
+        const baseY = cssH * (0.16 + k * 0.07);
+        const widths: [number, number][] = [
+          [46, 0.035],
+          [26, 0.05],
+          [10, 0.07],
+        ];
+        for (const [w, a] of widths) {
+          ctx.strokeStyle = `rgba(${AURORA[k]},${a})`;
+          ctx.lineWidth = w * scale;
+          ctx.beginPath();
+          for (let x = -20, j = 0; x <= cssW + 20; x += 24, j++) {
+            const y =
+              baseY +
+              Math.sin(x * 0.006 + t * 0.35 + k * 1.7) * cssH * 0.05 +
+              Math.sin(x * 0.014 - t * 0.5 + k) * cssH * 0.018;
+            if (j === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          }
+          ctx.stroke();
+        }
+      }
+      ctx.globalCompositeOperation = "source-over";
+    };
+
+    // Далёкие силуэты на втором плане (параллакс 0.4)
+    const BUNT = ["#e5383b", "#f4a300", "#f3eedf", "#2dd4a0"];
+    const farX = (i: number) => i * 150 + rnd(i * 3.7 + 1) * 70;
+    const hillY = (x: number) => 450 - (30 + 22 * Math.sin(x * 0.01) + 12 * Math.sin(x * 0.027));
+
+    const drawFarProps = (t: number) => {
+      layer(0.4);
+      const x0 = camX * 0.4 - 140;
+      const x1 = camX * 0.4 + viewW + 140;
+      const i0 = Math.floor(x0 / 150);
+      const i1 = Math.ceil(x1 / 150);
+      for (let i = i0; i <= i1; i++) {
+        const r = rnd(i * 3.7 + 1);
+        const x = farX(i);
+        const by = hillY(x) + 3;
+
+        if (th.decor === "pines") {
+          if (!th.snowy && r > 0.6) {
+            const w = 34 + r * 20;
+            const h = 22 + r * 12;
+            ctx.fillStyle = skyDim;
+            ctx.fillRect(x - w / 2, by - h, w, h + 2);
+            ctx.fillStyle = shade(th.mid, -0.5);
+            ctx.beginPath();
+            ctx.moveTo(x - w / 2 - 4, by - h);
+            ctx.lineTo(x, by - h - 16);
+            ctx.lineTo(x + w / 2 + 4, by - h);
+            ctx.closePath();
+            ctx.fill();
+            const lit = 0.55 + 0.25 * Math.sin(t * 1.3 + i);
+            glowAt(x, by - h * 0.55, 18, "255,200,87", lit * 0.5);
+            ctx.fillStyle = `rgba(255,208,110,${lit})`;
+            ctx.fillRect(x - 9, by - h * 0.55 - 3, 6, 6);
+            ctx.fillRect(x + 4, by - h * 0.55 - 3, 6, 6);
+          } else if (r > 0.2) {
+            const h = 34 + r * 30;
+            ctx.fillStyle = skyDim;
+            ctx.beginPath();
+            ctx.moveTo(x, by - h);
+            ctx.lineTo(x - 13, by - h * 0.35);
+            ctx.lineTo(x + 13, by - h * 0.35);
+            ctx.closePath();
+            ctx.moveTo(x, by - h * 0.7);
+            ctx.lineTo(x - 17, by);
+            ctx.lineTo(x + 17, by);
+            ctx.closePath();
+            ctx.fill();
+          }
+        } else if (th.decor === "stalls") {
+          const nx = farX(i + 1);
+          const nby = hillY(nx) + 3;
+          const y0 = by - 54;
+          const y1 = nby - 54;
+          const cx = (x + nx) / 2;
+          const cy = (y0 + y1) / 2 + 32;
+          ctx.strokeStyle = "rgba(20,10,30,0.55)";
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(x, by);
+          ctx.lineTo(x, y0);
+          ctx.stroke();
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          ctx.moveTo(x, y0);
+          ctx.quadraticCurveTo(cx, cy, nx, y1);
+          ctx.stroke();
+          ctx.globalAlpha = 0.8;
+          for (let k = 1; k < 9; k++) {
+            const u = k / 9;
+            const px = (1 - u) * (1 - u) * x + 2 * (1 - u) * u * cx + u * u * nx;
+            const py = (1 - u) * (1 - u) * y0 + 2 * (1 - u) * u * cy + u * u * y1;
+            const fl = Math.sin(t * 3 + k + i) * 1.5;
+            ctx.fillStyle = BUNT[(k + i) & 3];
+            ctx.beginPath();
+            ctx.moveTo(px - 4, py);
+            ctx.lineTo(px + 4, py);
+            ctx.lineTo(px + fl, py + 9);
+            ctx.closePath();
+            ctx.fill();
+          }
+          ctx.globalAlpha = 1;
+        } else if (th.decor === "masts") {
+          if (r < 0.55) continue;
+          const sx = x + 20;
+          const sy = 392 + Math.sin(t * 0.9 + i) * 2;
+          ctx.fillStyle = "#07172a";
+          ctx.beginPath();
+          ctx.moveTo(sx - 26, sy - 6);
+          ctx.lineTo(sx + 26, sy - 6);
+          ctx.lineTo(sx + 18, sy + 4);
+          ctx.lineTo(sx - 20, sy + 4);
+          ctx.closePath();
+          ctx.fill();
+          ctx.fillRect(sx - 1, sy - 44, 2, 40);
+          ctx.fillStyle = "rgba(233,226,207,0.5)";
+          ctx.beginPath();
+          ctx.moveTo(sx + 2, sy - 42);
+          ctx.lineTo(sx + 22, sy - 9);
+          ctx.lineTo(sx + 2, sy - 9);
+          ctx.moveTo(sx - 2, sy - 36);
+          ctx.lineTo(sx - 18, sy - 9);
+          ctx.lineTo(sx - 2, sy - 9);
+          ctx.fill();
+          glowAt(sx, sy - 46, 9, "255,200,87", 0.5);
+        } else if (th.decor === "trees") {
+          const tw = 16 + r * 14;
+          ctx.fillStyle = "rgba(6,22,14,0.65)";
+          ctx.fillRect(x - tw / 2, -offsetY - 20, tw, by + offsetY + 24);
+          ctx.beginPath();
+          ctx.arc(x, 74, 46 + r * 34, 0, Math.PI * 2);
+          ctx.fill();
+          glowAt(x + 10, by - 8, 30, "182,255,107", 0.16 + 0.08 * Math.sin(t * 1.5 + i));
+        } else if (th.decor === "crystals") {
+          const n = 2 + (r > 0.5 ? 1 : 0);
+          for (let k = 0; k < n; k++) {
+            const cx = x + k * 14 - 14;
+            const ch = 30 + rnd(i * 2 + k) * 50;
+            const col = k % 2 ? "255,123,229" : "139,123,255";
+            glowAt(cx, by - ch * 0.5, ch * 0.9, col, 0.18 + 0.08 * Math.sin(t * 1.6 + i + k));
+            ctx.fillStyle = `rgba(${col},0.45)`;
+            ctx.beginPath();
+            ctx.moveTo(cx - 7, by);
+            ctx.lineTo(cx - 3, by - ch * 0.75);
+            ctx.lineTo(cx, by - ch);
+            ctx.lineTo(cx + 4, by - ch * 0.7);
+            ctx.lineTo(cx + 8, by);
+            ctx.closePath();
+            ctx.fill();
+          }
+        } else if (th.decor === "pillars") {
+          if (r < 0.35) continue;
+          ctx.fillStyle = skyDim;
+          ctx.strokeStyle = skyDim;
+          ctx.fillRect(x - 26, by - 62, 10, 66);
+          ctx.fillRect(x + 16, by - 62, 10, 66);
+          ctx.lineWidth = 10;
+          ctx.beginPath();
+          ctx.arc(x, by - 62, 21, Math.PI, 0);
+          ctx.stroke();
+          if (r > 0.7) ctx.fillRect(x - 32, by - 72, 64, 8);
+        } else if (th.decor === "antennas") {
+          if (r < 0.5) continue;
+          const ax = x + 30;
+          const ay = 110 + r * 150 + Math.sin(t * 0.5 + i) * 8;
+          ctx.save();
+          ctx.translate(ax, ay);
+          ctx.rotate(t * 0.08 + i);
+          ctx.fillStyle = "#1c1c52";
+          ctx.beginPath();
+          ctx.moveTo(-14, -4);
+          ctx.lineTo(-6, -12);
+          ctx.lineTo(8, -10);
+          ctx.lineTo(15, 2);
+          ctx.lineTo(4, 12);
+          ctx.lineTo(-10, 8);
+          ctx.closePath();
+          ctx.fill();
+          ctx.strokeStyle = "rgba(125,249,255,0.35)";
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
+    };
+
+    // Передний план: тёмные травинки или скалы по нижнему краю
+    const drawForeground = (t: number) => {
+      layer(1.35);
+      const x0 = camX * 1.35 - 40;
+      const x1 = camX * 1.35 + viewW + 40;
+      const sw = 26;
+      ctx.fillStyle = fgColor;
+      ctx.beginPath();
+      for (let x = Math.floor(x0 / sw) * sw; x < x1; x += sw) {
+        const r = rnd(x * 0.17);
+        const h = (bladeFg ? 18 + r * 42 : 14 + r * 30) | 0;
+        const lean = bladeFg ? Math.sin(t * 1.4 + x * 0.02) * 5 : 0;
+        const w = bladeFg ? sw * 0.55 : sw * 0.95;
+        ctx.moveTo(x, VIEW_H + 5);
+        ctx.lineTo(x + w * 0.5 + lean, VIEW_H + 5 - h);
+        ctx.lineTo(x + w, VIEW_H + 5);
+      }
+      ctx.fill();
+    };
+
+    /* --- кадр --- */
+
+    const draw = (t: number) => {
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      if (backdrop) ctx.drawImage(backdrop, 0, 0);
+
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.fillStyle = "#f3eedf";
+      if (th.stars > 0) {
+        STARS.forEach((s) => {
+          const sx = s.x * cssW;
+          const sy = s.y * cssH * 0.7;
+          if (Math.hypot(sx - orbX, sy - orbYpx) < orbRad * 1.5) return;
+          ctx.globalAlpha = (0.4 + 0.5 * Math.sin(t * 1.5 + s.p)) * th.stars;
+          ctx.fillRect(sx, sy, s.r, s.r);
+        });
+        ctx.globalAlpha = 1;
+      }
+
+      if (q >= 1 && th.snowy) drawAurora(t);
+      if (q >= 2) drawClouds(t);
 
       // далёкие горы
       layer(0.15);
@@ -2041,7 +2622,7 @@ export default function GameWorld({ chapter, onFinish }: Props) {
       ctx.closePath();
       ctx.fill();
 
-      // море за порт: волны бегут
+      // море за портом
       if (th.decor === "masts") {
         const x0 = Math.floor((camX * 0.4 - 40) / 30) * 30;
         const x1 = camX * 0.4 + viewW + 40;
@@ -2052,17 +2633,18 @@ export default function GameWorld({ chapter, onFinish }: Props) {
         ctx.fillRect(x0, 372, x1 - x0, 90);
         ctx.strokeStyle = "rgba(127,208,232,0.45)";
         ctx.lineWidth = 2;
+        ctx.beginPath();
         for (let x = x0; x < x1; x += 30) {
           for (let r = 0; r < 3; r++) {
             const y = 384 + r * 18 + Math.sin(x * 0.05 + t * 2 + r) * 2.5;
-            ctx.beginPath();
             ctx.moveTo(x, y);
             ctx.lineTo(x + 16, y);
-            ctx.stroke();
           }
         }
+        ctx.stroke();
       }
 
+      if (q >= 1) drawFarProps(t);
       if (th.ceiling) drawCeiling();
 
       // основной слой
@@ -2095,29 +2677,37 @@ export default function GameWorld({ chapter, onFinish }: Props) {
         }
       });
       chapter.npcs.forEach((n) => {
-        if (n.y === GROUND_Y) drawLamp(n.x - 70, t);
+        if (n.y === GROUND_Y && Math.abs(n.x - 70 - camX - viewW / 2) < viewW / 2 + 100) drawLamp(n.x - 70, t);
       });
       solids.forEach((s) => drawSolid(s.x, s.y, s.w, s.h));
+      drawBits(t);
       platforms.forEach(drawPlatform);
       spikes.forEach(drawSpikes);
       movers.forEach((m, i) => drawMover(m, mNow[i]));
       gems.forEach((g, i) => drawGem(g, i, t));
-      chapter.npcs.forEach((_, i) => drawNpc(i, t));
+      chapter.npcs.forEach((n, i) => {
+        if (Math.abs(n.x - camX - viewW / 2) < viewW / 2 + 120) drawNpc(i, t);
+      });
       drawHero(t);
       drawParts();
       drawAmbient(t);
+      if (q >= 1) drawForeground(t);
 
-      // снег падает по экрану
+      // всё, что рисуется по экрану
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       if (th.ambient === "snow") {
         ctx.fillStyle = "rgba(240,246,255,0.8)";
-        amb.forEach((a) => {
+        const lim = amb.length * ambK;
+        ctx.beginPath();
+        for (let ai = 0; ai < lim; ai++) {
+          const a = amb[ai];
           const sx = (a.x / worldW) * cssW + Math.sin(t * 0.7 + a.p) * 14;
           const sy = ((a.p / 6.28) * cssH + t * (30 + 45 * a.s)) % cssH;
-          ctx.beginPath();
-          ctx.arc(sx, sy, 1.2 + a.s * 1.4, 0, Math.PI * 2);
-          ctx.fill();
-        });
+          const rr = 1.2 + a.s * 1.4;
+          ctx.moveTo(sx + rr, sy);
+          ctx.arc(sx, sy, rr, 0, Math.PI * 2);
+        }
+        ctx.fill();
       }
 
       if (th.ambient === "meteors") {
@@ -2141,28 +2731,73 @@ export default function GameWorld({ chapter, onFinish }: Props) {
       }
 
       // туман редеет с каждым верным ответом
-      const fog = 1 - (correctRef.current / total) * 0.85;
-      for (let i = 0; i < 8; i++) {
-        const x = ((i * 173 + t * 14) % (cssW + 400)) - 200;
-        const y = cssH * 0.5 + ((i * 41) % 200);
-        const r = (110 + ((i * 17) % 60)) * scale;
-        const g = ctx.createRadialGradient(x, y, 0, x, y, r);
-        g.addColorStop(0, `rgba(${th.fog},${0.16 * fog})`);
-        g.addColorStop(1, `rgba(${th.fog},0)`);
-        ctx.fillStyle = g;
-        ctx.beginPath();
-        ctx.arc(x, y, r, 0, Math.PI * 2);
-        ctx.fill();
+      if (q >= 1) {
+        const fog = 1 - (correctRef.current / total) * 0.85;
+        const spr = glowSprite(th.fog);
+        ctx.globalAlpha = 0.16 * fog;
+        for (let i = 0; i < 8; i++) {
+          const x = ((i * 173 + t * 14) % (cssW + 400)) - 200;
+          const y = cssH * 0.5 + ((i * 41) % 200);
+          const r = (110 + ((i * 17) % 60)) * scale;
+          ctx.drawImage(spr, x - r, y - r, r * 2, r * 2);
+        }
+        ctx.globalAlpha = 1;
+      }
+
+      // лучи света дышат
+      if (rays && q >= 2) {
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.globalCompositeOperation = "lighter";
+        ctx.globalAlpha = 0.11 + 0.04 * Math.sin(t * 0.4);
+        ctx.drawImage(rays, 0, 0);
+        ctx.globalAlpha = 1;
+        ctx.globalCompositeOperation = "source-over";
+      }
+
+      if (vignette) {
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.drawImage(vignette, 0, 0);
       }
     };
 
+    /* --- цикл --- */
+
+    let ema = 1 / 60;
+    let sinceAdapt = 0;
     let raf = 0;
     let last = performance.now();
+
     const frame = (now: number) => {
-      const dt = Math.min((now - last) / 1000, 0.05);
+      const raw = (now - last) / 1000;
+      const dt = Math.min(raw, 0.05);
       last = now;
+
+      if (needResize) {
+        needResize = false;
+        resize();
+      }
+
+      // слабое устройство: плавно снижаем качество, а не лагаем
+      if (raw < 0.5) {
+        ema += (raw - ema) * 0.05;
+        sinceAdapt++;
+      }
+      if (!calm && q > 0 && ((sinceAdapt > 150 && ema > 0.026) || (sinceAdapt > 20 && ema > 0.06))) {
+        q -= 1;
+        sinceAdapt = 0;
+        ema = 1 / 60;
+        ambK = q >= 2 ? 1 : q === 1 ? 0.6 : 0.3;
+        resize();
+      }
+
+      if (cachesDirty) {
+        cachesDirty = false;
+        rebuildCaches();
+      }
+
       const t = calm ? 0 : now / 1000;
-      step(dt);
+      const sub = Math.max(1, Math.ceil(dt / (1 / 60)));
+      for (let i = 0; i < sub; i++) step(dt / sub);
       updateParts(dt);
       watchResults(t);
       updateNear();
@@ -2171,11 +2806,19 @@ export default function GameWorld({ chapter, onFinish }: Props) {
     };
     raf = requestAnimationFrame(frame);
 
+    const onVis = () => {
+      last = performance.now();
+      if (document.hidden) keysRef.current.clear();
+    };
+    document.addEventListener("visibilitychange", onVis);
+
     return () => {
       cancelAnimationFrame(raf);
-      window.removeEventListener("resize", resize);
+      window.removeEventListener("resize", onResize);
+      document.removeEventListener("visibilitychange", onVis);
     };
   }, [chapter, total]);
+
 
   /* ---------- Интерфейс ---------- */
 
@@ -2187,6 +2830,7 @@ export default function GameWorld({ chapter, onFinish }: Props) {
     onPointerUp: () => keysRef.current.delete(code),
     onPointerLeave: () => keysRef.current.delete(code),
     onPointerCancel: () => keysRef.current.delete(code),
+    onContextMenu: (e: { preventDefault: () => void }) => e.preventDefault(),
   });
 
   return (

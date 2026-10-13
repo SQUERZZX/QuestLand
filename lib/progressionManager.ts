@@ -23,6 +23,7 @@ export type Completion = {
   save: SaveData;
   awarded: boolean;
   finishedLevel: LevelId | null;
+  streak?: { from: number; to: number }; // серия выросла: показать праздник
 };
 
 export function hasChapters(landId: string): boolean {
@@ -151,6 +152,7 @@ export function applyCompletion(
   };
 
   let finishedLevel: LevelId | null = null;
+  let streak: { from: number; to: number } | undefined;
 
   if (chapter && levelProgress(updated, chapter.level, chapter.land).complete) {
     finishedLevel = chapter.level;
@@ -165,9 +167,10 @@ export function applyCompletion(
       ...updated,
       hero: { ...updated.hero, streak: updated.hero.streak + 1 },
     };
+    streak = { from: save.hero.streak, to: updated.hero.streak };
   }
 
-  return { save: updated, awarded: true, finishedLevel };
+  return { save: updated, awarded: true, finishedLevel, streak };
 }
 
 // Пропуск дня: минус жизнь. Последняя жизнь — сброс XP, серии и глав текущего уровня.

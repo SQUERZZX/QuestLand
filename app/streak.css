@@ -1,0 +1,435 @@
+/* =========================================================
+   Серия: огонь, праздничный экран, недельная полоска
+   ========================================================= */
+
+/* ---------- Пламя ---------- */
+.sf {
+  --f1: #ff4d1a;
+  --f1b: #ff9a2e;
+  --f2: #ffc43d;
+  --f3: #fff3b8;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.sf-off {
+  --f1: #3d4668;
+  --f1b: #566086;
+  --f2: #6b7599;
+  --f3: #9aa5ce;
+}
+.sf-outer,
+.sf-mid,
+.sf-in {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+}
+.sf-lit .sf-outer { animation: sf-flick 1.7s ease-in-out infinite; }
+.sf-lit .sf-mid { animation: sf-flick 1.25s ease-in-out infinite reverse; }
+.sf-lit .sf-in { animation: sf-flick 0.9s ease-in-out infinite; }
+@keyframes sf-flick {
+  0%, 100% { transform: scale(1, 1) skewX(0deg); }
+  25% { transform: scale(1.03, 1.07) skewX(-2.5deg); }
+  50% { transform: scale(0.97, 0.95) skewX(2deg); }
+  75% { transform: scale(1.02, 1.04) skewX(-1deg); }
+}
+
+/* Чем длиннее серия, тем жарче и необычнее цвет */
+.sc-tier-1 .sf { --f1: #ff3326; --f1b: #ff8a1f; --f2: #ffd23d; --f3: #fffbe0; }
+.sc-tier-2 .sf { --f1: #5b3df0; --f1b: #8f7bff; --f2: #5cc8ff; --f3: #e6faff; }
+.sc-tier-3 .sf { --f1: #ff9a00; --f1b: #ffd54a; --f2: #fff0a0; --f3: #ffffff; }
+
+/* ---------- Праздничный экран ---------- */
+.sc-overlay {
+  --glow: 255, 140, 40;
+  --num-a: #fff3c4;
+  --num-b: #ffb21f;
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  padding: calc(20px + env(safe-area-inset-top, 0px)) 20px calc(20px + env(safe-area-inset-bottom, 0px));
+  background:
+    radial-gradient(ellipse at 50% 34%, rgba(var(--glow), 0.3), transparent 58%),
+    radial-gradient(ellipse at 50% 120%, rgba(139, 92, 246, 0.25), transparent 60%),
+    #0b1020;
+  animation: sc-fade 0.4s ease-out both;
+  text-align: center;
+}
+.sc-tier-1 { --glow: 255, 90, 40; }
+.sc-tier-2 { --glow: 110, 130, 255; --num-a: #e6faff; --num-b: #8f9bff; }
+.sc-tier-3 { --glow: 255, 200, 60; --num-a: #ffffff; --num-b: #ffd54a; }
+@keyframes sc-fade { from { opacity: 0; } }
+
+.sc-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.sc-glow {
+  position: absolute;
+  left: 50%;
+  top: 34%;
+  width: min(120vw, 900px);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, rgba(var(--glow), 0.38), transparent 62%);
+  animation: sc-glow 3.2s ease-in-out 1s infinite;
+  pointer-events: none;
+}
+@keyframes sc-glow {
+  0%, 100% { opacity: 0.7; transform: translate(-50%, -50%) scale(1); }
+  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.08); }
+}
+
+/* Ударная волна на рубежах */
+.sc-shock {
+  position: absolute;
+  left: 50%;
+  top: 34%;
+  width: 40vmin;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 3px solid rgba(var(--glow), 0.9);
+  transform: translate(-50%, -50%) scale(0);
+  opacity: 0;
+  animation: sc-shock 1.4s cubic-bezier(0.1, 0.6, 0.3, 1) 1.1s both;
+  pointer-events: none;
+}
+.sc-shock-2 { animation-delay: 1.35s; border-width: 2px; }
+@keyframes sc-shock {
+  0% { opacity: 0.9; transform: translate(-50%, -50%) scale(0.1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(4); }
+}
+
+.sc-stage {
+  position: relative;
+  z-index: 1;
+  width: min(460px, 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Огонь падает сверху с отскоком */
+.sc-hero {
+  position: relative;
+  width: clamp(120px, 30vw, 168px);
+  aspect-ratio: 100 / 130;
+}
+.sc-flame {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 0 28px rgba(var(--glow), 0.75));
+  animation:
+    sc-drop 1s cubic-bezier(0.34, 1.56, 0.64, 1) 0.15s both,
+    sc-breathe 2.4s ease-in-out 1.2s infinite;
+}
+@keyframes sc-drop {
+  0% { opacity: 0; transform: translateY(-55vh) scale(0.2) rotate(-28deg); }
+  60% { opacity: 1; }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes sc-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.045); }
+}
+
+/* Искорки вокруг огня */
+.sc-spark {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: #fff3c4;
+  clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
+  opacity: 0;
+  animation: sc-twinkle 1.8s ease-in-out infinite;
+}
+.sc-spark-0 { left: -14%; top: 18%; animation-delay: 1.2s; }
+.sc-spark-1 { right: -16%; top: 8%; width: 14px; height: 14px; animation-delay: 1.5s; }
+.sc-spark-2 { left: -24%; top: 56%; width: 7px; height: 7px; animation-delay: 1.8s; }
+.sc-spark-3 { right: -22%; top: 50%; animation-delay: 2.1s; }
+.sc-spark-4 { left: 6%; top: -8%; width: 8px; height: 8px; animation-delay: 1.35s; }
+.sc-spark-5 { right: 4%; top: -4%; width: 7px; height: 7px; animation-delay: 1.95s; }
+@keyframes sc-twinkle {
+  0%, 100% { opacity: 0; transform: scale(0.2) rotate(0deg); }
+  50% { opacity: 1; transform: scale(1.2) rotate(90deg); }
+}
+
+/* Число перекатывается, как одометр */
+.sc-count {
+  margin-top: 16px;
+  font-family: var(--font-display), serif;
+  font-weight: 800;
+  font-size: clamp(5rem, 24vw, 8.5rem);
+  line-height: 1;
+  filter: drop-shadow(0 6px 24px rgba(var(--glow), 0.5));
+  animation: sc-numpop 0.55s ease-out 1.45s both;
+}
+@keyframes sc-numpop {
+  0% { transform: scale(1); }
+  45% { transform: scale(1.22); }
+  100% { transform: scale(1); }
+}
+.sc-roll {
+  display: inline-grid;
+  overflow: hidden;
+  padding: 0.04em 0.06em;
+}
+.sc-roll > span {
+  grid-area: 1 / 1;
+  /* градиент на каждой цифре: на родителе он пропадает из-за анимации transform у детей */
+  background: linear-gradient(180deg, var(--num-a), var(--num-b));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+.sc-old { animation: sc-out 0.4s cubic-bezier(0.5, 0, 0.75, 0) 1.1s both; }
+.sc-new { animation: sc-in 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) 1.1s both; }
+@keyframes sc-out { to { transform: translateY(-110%); opacity: 0; } }
+@keyframes sc-in { from { transform: translateY(110%); } to { transform: none; } }
+
+.sc-label {
+  font-family: var(--font-display), serif;
+  font-size: clamp(1.4rem, 5vw, 1.9rem);
+  font-weight: 700;
+  color: var(--num-b);
+  letter-spacing: 0.02em;
+  margin-top: -4px;
+  animation: rise 0.6s var(--ease, ease-out) 0.9s both;
+}
+.sc-msg {
+  max-width: 34ch;
+  color: var(--text);
+  font-size: 1.1rem;
+  animation: rise 0.6s var(--ease, ease-out) 1.3s both;
+}
+
+.sc-pill {
+  padding: 4px 16px;
+  border-radius: 99px;
+  font-weight: 800;
+  font-size: 0.85rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #1a1203;
+  background: linear-gradient(100deg, #ffe08a, #ffb21f, #ffe08a);
+  background-size: 200% 100%;
+  animation: sc-pill 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 1.2s both, sc-shine 2.2s linear 1.8s infinite;
+}
+@keyframes sc-pill { from { opacity: 0; transform: scale(0.4); } }
+@keyframes sc-shine { to { background-position: -200% 0; } }
+
+.sc-week {
+  margin-top: 14px;
+  padding: 16px 14px 14px;
+  width: 100%;
+  border-radius: 18px;
+  background: rgba(20, 27, 51, 0.7);
+  border: 1px solid rgba(159, 176, 230, 0.2);
+  animation: rise 0.6s var(--ease, ease-out) 0.45s both;
+}
+
+.sc-btn {
+  margin-top: 18px;
+  width: 100%;
+  max-width: 340px;
+  font-size: 1.15rem;
+  animation: rise 0.5s var(--ease, ease-out) 1.9s both;
+}
+.sc-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+/* ---------- Недельная полоска ---------- */
+.sw {
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+}
+.sw-day {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.sw-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--dim);
+}
+.sw-now .sw-label { color: var(--fire-hot); }
+
+.sw-dot {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: clamp(32px, 9.5vw, 42px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 2px solid var(--line);
+  background: rgba(255, 255, 255, 0.03);
+}
+.sw-idle .sw-dot { opacity: 0.7; }
+.sw-future .sw-dot { border-style: dashed; opacity: 0.4; }
+.sw-pending .sw-dot {
+  border-color: var(--fire);
+  box-shadow: 0 0 0 0 rgba(244, 163, 0, 0.5);
+  animation: sw-pulse 1.8s ease-out infinite;
+}
+@keyframes sw-pulse { to { box-shadow: 0 0 0 10px rgba(244, 163, 0, 0); } }
+
+/* Закрашенный кружок: слой-заливка под иконкой */
+.sw-dot::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  background: linear-gradient(160deg, #ffd166, #ff8a1f);
+  box-shadow: 0 0 14px rgba(255, 150, 40, 0.5);
+  transform: scale(0);
+}
+.sw-done .sw-dot { border-color: transparent; }
+.sw-done .sw-dot::before { transform: none; }
+
+.sw-check {
+  position: relative;
+  width: 62%;
+  height: 62%;
+  fill: none;
+  stroke: #3a2200;
+  stroke-width: 3.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.sw-dot .sw-flame {
+  position: relative;
+  width: 58%;
+  height: 78%;
+  margin-top: -6%;
+}
+.sw-flame {
+  --f1: #c2210a;
+  --f1b: #e8450a;
+  --f2: #ff8a1f;
+  --f3: #ffe08a;
+}
+
+/* Анимация на праздничном экране: дни закрашиваются по очереди, сегодня зажигается последним */
+.sw-anim .sw-day { --d: calc(0.6s + var(--i) * 0.09s); }
+.sw-anim .sw-now { --d: 1.2s; }
+.sw-anim .sw-done .sw-dot::before { transform: scale(0); animation: sw-fill 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) var(--d) both; }
+.sw-anim .sw-done .sw-check,
+.sw-anim .sw-done .sw-dot .sw-flame { opacity: 0; animation: sw-icon 0.35s ease-out calc(var(--d) + 0.15s) both; }
+@keyframes sw-fill { from { transform: scale(0); } to { transform: scale(1); } }
+@keyframes sw-icon { from { opacity: 0; transform: scale(0.3); } to { opacity: 1; transform: none; } }
+.sw-anim .sw-now.sw-done .sw-dot {
+  animation: sw-ignite 0.7s ease-out 1.2s both;
+}
+@keyframes sw-ignite {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.4); }
+  100% { transform: scale(1); }
+}
+.sw-anim .sw-now.sw-done .sw-dot::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  border: 3px solid #ffd166;
+  opacity: 0;
+  animation: sw-burst 0.9s ease-out 1.25s both;
+}
+@keyframes sw-burst {
+  from { opacity: 0.9; transform: scale(1); }
+  to { opacity: 0; transform: scale(2.6); }
+}
+
+/* ---------- Дашборд ---------- */
+.streak-stat {
+  display: flex;
+  flex-direction: row !important;
+  align-items: center;
+  gap: 12px;
+}
+.streak-stat .sf-wrap {
+  width: 34px;
+  height: 44px;
+  flex: none;
+  filter: drop-shadow(0 0 10px rgba(255, 140, 40, 0.6));
+  transition: filter 0.4s;
+}
+.streak-stat .sf-wrap.sf-wrap-off { filter: none; }
+.streak-stat .streak-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+.streak-stat strong { font-size: 1.7rem; }
+.streak-sub { font-size: 0.8rem; }
+
+.dash-week {
+  margin: 20px 0 0;
+  padding: 16px 18px 14px;
+  border-radius: 14px;
+  background: linear-gradient(160deg, rgba(28, 37, 70, 0.7), var(--panel));
+  border: 1px solid var(--line);
+}
+.dash-week-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.dash-week-head h2 { font-size: 1.15rem; }
+
+@media (max-width: 380px) {
+  .sc-count { font-size: 4.6rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sc-overlay,
+  .sc-glow,
+  .sc-shock,
+  .sc-flame,
+  .sc-spark,
+  .sc-count,
+  .sc-old,
+  .sc-new,
+  .sc-label,
+  .sc-msg,
+  .sc-pill,
+  .sc-week,
+  .sc-btn,
+  .sw-dot,
+  .sw-dot::before,
+  .sw-dot::after,
+  .sw-check,
+  .sw-flame,
+  .sf-outer,
+  .sf-mid,
+  .sf-in {
+    animation: none !important;
+  }
+  .sc-old { display: none; }
+  .sc-spark { opacity: 0; }
+  .sc-shock { display: none; }
+  .sw-anim .sw-done .sw-dot::before { transform: none; }
+  .sw-anim .sw-done .sw-check,
+  .sw-anim .sw-done .sw-dot .sw-flame { opacity: 1; }
+}
