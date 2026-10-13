@@ -35,12 +35,16 @@ export default function StreakCelebration({ from, to, onClose }: Props) {
   // Звук, вибрация, момент «перекатывания» числа
   useEffect(() => {
     const timers: NodeJS.Timeout[] = [];
-    sfx("streak" as any);
+    
+    // @ts-ignore
+    sfx("streak");
     
     timers.push(
       setTimeout(() => {
-        sfx("tick" as any);
-        if (milestone) sfx("fanfare" as any);
+        // @ts-ignore
+        sfx("tick");
+        // @ts-ignore
+        if (milestone) sfx("fanfare");
         try {
           navigator.vibrate?.(milestone ? [40, 50, 40, 50, 90] : [30, 40, 60]);
         } catch {
