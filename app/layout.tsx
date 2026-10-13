@@ -5,6 +5,7 @@ import "./globals.css";
 import "./assistant.css";
 import "./landscape.css";
 import "./polish.css";
+import "./streak.css";
 import ClickSound from "@/components/ClickSound";
 import Assistant from "@/components/Assistant";
 

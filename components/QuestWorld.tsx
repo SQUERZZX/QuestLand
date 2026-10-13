@@ -6,6 +6,7 @@ import Link from "next/link";
 import GameWorld from "@/components/GameWorld";
 import LandscapeGate from "@/components/LandscapeGate";
 import TerminalDock from "@/components/TerminalDock";
+import StreakCelebration from "@/components/StreakCelebration";
 import WordCard from "@/components/WordCard";
 import { sfx } from "@/lib/audio";
 import { CHAPTERS } from "@/lib/chapters";
@@ -65,6 +66,7 @@ export default function QuestWorld({ questId }: { questId: string }) {
   const [correct, setCorrect] = useState(0);
   const [awarded, setAwarded] = useState(false);
   const [finished, setFinished] = useState<LevelId | null>(null);
+  const [streakUp, setStreakUp] = useState<{ from: number; to: number } | null>(null);
 
   useEffect(() => {
     if (phase !== "loading") return;
@@ -91,6 +93,7 @@ export default function QuestWorld({ questId }: { questId: string }) {
       if (result.awarded) writeSave(result.save);
       setAwarded(result.awarded);
       setFinished(result.finishedLevel);
+      setStreakUp(result.streak ?? null);
     }
     setPhase("result");
   };
@@ -117,6 +120,7 @@ export default function QuestWorld({ questId }: { questId: string }) {
     setCorrect(0);
     setAwarded(false);
     setFinished(null);
+    setStreakUp(null);
     setPhase("play");
   };
 
@@ -144,6 +148,7 @@ export default function QuestWorld({ questId }: { questId: string }) {
 
   if (phase === "result") {
     return (
+      <>
       <ResultScreen
         style={style}
         passed={passed}
@@ -156,6 +161,14 @@ export default function QuestWorld({ questId }: { questId: string }) {
         landId={land.id}
         onRetry={retry}
       />
+      {streakUp && (
+        <StreakCelebration
+          from={streakUp.from}
+          to={streakUp.to}
+          onClose={() => setStreakUp(null)}
+        />
+      )}
+      </>
     );
   }
 

@@ -34,21 +34,28 @@ export default function StreakCelebration({ from, to, onClose }: Props) {
 
   // Звук, вибрация, момент «перекатывания» числа
   useEffect(() => {
-    const timers: ReturnType<typeof setTimeout>[] = [];
-    sfx("streak");
+    const timers: NodeJS.Timeout[] = [];
+    sfx("streak" as any);
+    
     timers.push(
       setTimeout(() => {
-        sfx("tick");
-        if (milestone) sfx("fanfare");
+        sfx("tick" as any);
+        if (milestone) sfx("fanfare" as any);
         try {
           navigator.vibrate?.(milestone ? [40, 50, 40, 50, 90] : [30, 40, 60]);
         } catch {
           /* вибрации нет */
         }
-      }, ROLL_MS),
-      setTimeout(() => setReady(true), READY_MS),
+      }, ROLL_MS)
     );
-    return () => timers.forEach(clearTimeout);
+
+    timers.push(
+      setTimeout(() => setReady(true), READY_MS)
+    );
+
+    return () => {
+      timers.forEach((timer) => clearTimeout(timer));
+    };
   }, [milestone]);
 
   // Enter, пробел или Esc закрывают, когда анимация доиграла
@@ -128,14 +135,16 @@ export default function StreakCelebration({ from, to, onClose }: Props) {
       });
     };
 
-    const timers: ReturnType<typeof setTimeout>[] = [];
+    const timers: NodeJS.Timeout[] = [];
     timers.push(
-      setTimeout(() => burst(milestone ? 130 : 80, w / 2, h * 0.36, 720), ROLL_MS),
+      setTimeout(() => burst(milestone ? 130 : 80, w / 2, h * 0.36, 720), ROLL_MS)
+    );
+    timers.push(
       setTimeout(() => {
         if (!milestone) return;
         burst(60, 0, h * 0.7, 900, 0.9, -0.9);
         burst(60, w, h * 0.7, 900, 0.9, -Math.PI + 0.9);
-      }, ROLL_MS + 350),
+      }, ROLL_MS + 350)
     );
 
     let raf = 0;
@@ -179,7 +188,6 @@ export default function StreakCelebration({ from, to, onClose }: Props) {
           ctx.translate(p.x, p.y);
           ctx.rotate(p.rot);
           if (p.shape === 0) {
-            // переворот полоски создаёт мерцание
             ctx.scale(1, Math.cos(p.life * 8 + p.rot));
             ctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2);
           } else {
@@ -197,7 +205,7 @@ export default function StreakCelebration({ from, to, onClose }: Props) {
 
     return () => {
       cancelAnimationFrame(raf);
-      timers.forEach(clearTimeout);
+      timers.forEach((timer) => clearTimeout(timer));
       window.removeEventListener("resize", resize);
     };
   }, [milestone]);

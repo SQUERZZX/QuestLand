@@ -67,7 +67,7 @@ function tone(
   o.stop(at + dur + 0.03);
 }
 
-export type Sfx = "jump" | "land" | "gem" | "hurt" | "right" | "wrong" | "click" | "win" | "lose" | "load" | "start";
+export type Sfx = "jump" | "land" | "gem" | "hurt" | "right" | "wrong" | "click" | "win" | "lose" | "load" | "start" | "streak" | "tick" | "fanfare";
 
 export function sfx(name: Sfx) {
   if (!getAudio().sfx) return;
@@ -106,6 +106,17 @@ export function sfx(name: Sfx) {
       break;
     case "start":
       [392, 523, 659].forEach((f, i) => tone(c, t + i * 0.08, f, 0.22, "triangle", 0.07));
+      break;
+    case "streak":
+      tone(c, t, 220, 0.9, "sawtooth", 0.04, 660);
+      tone(c, t + 0.1, 330, 0.9, "triangle", 0.05, 990);
+      break;
+    case "tick":
+      tone(c, t, 1200, 0.06, "square", 0.05);
+      tone(c, t + 0.06, 1600, 0.12, "triangle", 0.08);
+      break;
+    case "fanfare":
+      [523, 659, 784, 1046, 1318].forEach((f, i) => tone(c, t + i * 0.1, f, 0.3, "triangle", 0.1));
       break;
     case "win":
       [523, 659, 784, 1046].forEach((f, i) => tone(c, t + i * 0.12, f, 0.28, "triangle", 0.1));
